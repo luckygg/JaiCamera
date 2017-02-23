@@ -15,20 +15,40 @@
 // CFTech_JaiCameraDlg dialog
 
 
-UINT DisplayThread(LPVOID param)
+UINT DisplayThread1(LPVOID param)
 {
 	CFTech_JaiCameraDlg* pMain = (CFTech_JaiCameraDlg*)param;
 
 	DWORD dwResult=0;
-	while(pMain->m_bThDspWork)
+	while(pMain->m_bThDspWork[0])
 	{
 		Sleep(0);
 
-		dwResult = WaitForSingleObject(pMain->m_Camera.GetHandleGrabDone(),1000);
+		dwResult = WaitForSingleObject(pMain->m_Camera[0].GetHandleGrabDone(),1000);
 		if (dwResult == WAIT_OBJECT_0)
 		{
-			pMain->OnDisplay();
-			pMain->m_Camera.ResetHandleGrabDone();
+			pMain->OnDisplayCam1();
+			pMain->m_Camera[0].ResetHandleGrabDone();
+		}
+	}
+
+	return 0;
+}
+
+UINT DisplayThread2(LPVOID param)
+{
+	CFTech_JaiCameraDlg* pMain = (CFTech_JaiCameraDlg*)param;
+
+	DWORD dwResult=0;
+	while(pMain->m_bThDspWork[1])
+	{
+		Sleep(0);
+
+		dwResult = WaitForSingleObject(pMain->m_Camera[1].GetHandleGrabDone(),1000);
+		if (dwResult == WAIT_OBJECT_0)
+		{
+			pMain->OnDisplayCam2();
+			pMain->m_Camera[1].ResetHandleGrabDone();
 		}
 	}
 
@@ -40,9 +60,12 @@ CFTech_JaiCameraDlg::CFTech_JaiCameraDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_pBmpInfo = NULL;
-	m_pThDsp = NULL;
-	m_bThDspWork = false;
+	for (int i=0; i<MAX_CAMERA; i++)
+	{
+		m_pBmpInfo[i]	= NULL;
+		m_pThDsp[i]		= NULL;
+		m_bThDspWork[i] = false;
+	}
 }
 
 void CFTech_JaiCameraDlg::DoDataExchange(CDataExchange* pDX)
@@ -53,10 +76,12 @@ void CFTech_JaiCameraDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CFTech_JaiCameraDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BTN_CONNECTION, &CFTech_JaiCameraDlg::OnBnClickedBtnConnection)
 	ON_BN_CLICKED(IDC_BTN_REFRESH, &CFTech_JaiCameraDlg::OnBnClickedBtnRefresh)
-	ON_BN_CLICKED(IDC_BTN_ACQ, &CFTech_JaiCameraDlg::OnBnClickedBtnAcq)
 	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_BTN_CONNECTION1, &CFTech_JaiCameraDlg::OnBnClickedBtnConnection1)
+	ON_BN_CLICKED(IDC_BTN_ACQ1, &CFTech_JaiCameraDlg::OnBnClickedBtnAcq1)
+	ON_BN_CLICKED(IDC_BTN_CONNECTION2, &CFTech_JaiCameraDlg::OnBnClickedBtnConnection2)
+	ON_BN_CLICKED(IDC_BTN_ACQ2, &CFTech_JaiCameraDlg::OnBnClickedBtnAcq2)
 END_MESSAGE_MAP()
 
 
@@ -120,56 +145,6 @@ HCURSOR CFTech_JaiCameraDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CFTech_JaiCameraDlg::OnBnClickedBtnConnection()
-{
-	CString caption = _T("");
-	GetDlgItemText(IDC_BTN_CONNECTION, caption);
-	CListCtrl* pList = (CListCtrl*)GetDlgItem(IDC_LTC_LIST);
-	POSITION pos = pList->GetFirstSelectedItemPosition();
-	int nItem=0;
-	bool ret = false;
-	while (pos)
-	{
-		nItem = pList->GetNextSelectedItem(pos);
-	}
-
-	if (caption == _T("Connect"))
-	{
-		ret = m_Camera.OnConnect(nItem, false);	
-		if (ret == true)
-		{
-			CString value=_T("");
-			m_Camera.GetDeviceModelName(value);
-			SetDlgItemText(IDC_LB_MODEL, value);
-			m_Camera.GetSerialNumber(value);
-			SetDlgItemText(IDC_LB_SN, value);
-
-			int w=0,h=0,bpp=0;
-			m_Camera.GetWidth(w);
-			m_Camera.GetHeight(h);
-			m_Camera.GetBpp(bpp);
-
-			m_nWidth = w;
-			m_nHeight = h;
-			m_nBpp = bpp;
-
-			CreateBmpInfo(w,h,bpp);
-
-			SetDlgItemText(IDC_BTN_CONNECTION, _T("Disconnect"));
-		}
-		
-	}
-	else
-	{
-		m_Camera.OnDisconnect();
-
-		SetDlgItemText(IDC_LB_MODEL, _T(""));
-		SetDlgItemText(IDC_LB_SN, _T(""));
-
-		SetDlgItemText(IDC_BTN_CONNECTION, _T("Connect"));
-	}
-}
-
 void CFTech_JaiCameraDlg::OnBnClickedBtnRefresh()
 {
 	CListCtrl* pList = (CListCtrl*)GetDlgItem(IDC_LTC_LIST);
@@ -178,6 +153,8 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnRefresh()
 	JAI_STANDARD::CJaiSystem system;
 	int devices=0;
 	bool ret=false;
+
+	BeginWaitCursor();
 
 	ret = system.SearchDevices(devices);
 	if (ret == true)
@@ -204,114 +181,278 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnRefresh()
 			pList->SetItem(i, 5, LVIF_TEXT, ip, 0, 0, 0, NULL ); 
 		}
 	}
+
+	EndWaitCursor();
 }
 
-
-void CFTech_JaiCameraDlg::OnBnClickedBtnAcq()
+void CFTech_JaiCameraDlg::CreateBmpInfo(int nIdx, int nWidth, int nHeight, int nBpp)
 {
-	CString caption = _T("");
-	GetDlgItemText(IDC_BTN_ACQ, caption);
-	bool ret = false;
-
-	if (caption == _T("Start"))
+	if (m_pBmpInfo[nIdx] != NULL) 
 	{
-		ret = m_Camera.OnStartAcquisition();
-		if (ret == true)
-		{
-			m_bThDspWork = true;
-			m_pThDsp = AfxBeginThread(DisplayThread, this);
-			SetDlgItemText(IDC_BTN_ACQ, _T("Stop"));
-		}
-	}
-	else
-	{
-		m_bThDspWork = false;
-		WaitForSingleObject(m_pThDsp->m_hThread, INFINITE);
-
-		ret = m_Camera.OnStopAcquisition();
-		if (ret == true)
-			SetDlgItemText(IDC_BTN_ACQ, _T("Start"));
-	}
-}
-
-void CFTech_JaiCameraDlg::CreateBmpInfo(int nWidth, int nHeight, int nBpp)
-{
-	if (m_pBmpInfo != NULL) 
-	{
-		delete []m_pBmpInfo;
-		m_pBmpInfo = NULL;
+		delete []m_pBmpInfo[nIdx];
+		m_pBmpInfo[nIdx] = NULL;
 	}
 
 	if (nBpp == 8)
-		m_pBmpInfo = (BITMAPINFO *) new BYTE[sizeof(BITMAPINFO) + 255*sizeof(RGBQUAD)];
+		m_pBmpInfo[nIdx] = (BITMAPINFO *) new BYTE[sizeof(BITMAPINFO) + 255*sizeof(RGBQUAD)];
 	else if (nBpp == 24)
-		m_pBmpInfo = (BITMAPINFO *) new BYTE[sizeof(BITMAPINFO)];
+		m_pBmpInfo[nIdx] = (BITMAPINFO *) new BYTE[sizeof(BITMAPINFO)];
 
-	m_pBmpInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	m_pBmpInfo->bmiHeader.biPlanes = 1;
-	m_pBmpInfo->bmiHeader.biBitCount = nBpp;
-	m_pBmpInfo->bmiHeader.biCompression = BI_RGB;
+	m_pBmpInfo[nIdx]->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	m_pBmpInfo[nIdx]->bmiHeader.biPlanes = 1;
+	m_pBmpInfo[nIdx]->bmiHeader.biBitCount = nBpp;
+	m_pBmpInfo[nIdx]->bmiHeader.biCompression = BI_RGB;
 
 	if (nBpp == 8)
-		m_pBmpInfo->bmiHeader.biSizeImage = 0;
+		m_pBmpInfo[nIdx]->bmiHeader.biSizeImage = 0;
 	else if (nBpp == 24)
-		m_pBmpInfo->bmiHeader.biSizeImage = (((nWidth * 24 + 31) & ~31) >> 3) * nHeight;
+		m_pBmpInfo[nIdx]->bmiHeader.biSizeImage = (((nWidth * 24 + 31) & ~31) >> 3) * nHeight;
 
-	m_pBmpInfo->bmiHeader.biXPelsPerMeter = 0;
-	m_pBmpInfo->bmiHeader.biYPelsPerMeter = 0;
-	m_pBmpInfo->bmiHeader.biClrUsed = 0;
-	m_pBmpInfo->bmiHeader.biClrImportant = 0;
+	m_pBmpInfo[nIdx]->bmiHeader.biXPelsPerMeter = 0;
+	m_pBmpInfo[nIdx]->bmiHeader.biYPelsPerMeter = 0;
+	m_pBmpInfo[nIdx]->bmiHeader.biClrUsed = 0;
+	m_pBmpInfo[nIdx]->bmiHeader.biClrImportant = 0;
 
 	if (nBpp == 8)
 	{
 		for (int i = 0 ; i < 256 ; i++)
 		{
-			m_pBmpInfo->bmiColors[i].rgbBlue = (BYTE)i;
-			m_pBmpInfo->bmiColors[i].rgbGreen = (BYTE)i;
-			m_pBmpInfo->bmiColors[i].rgbRed = (BYTE)i;
-			m_pBmpInfo->bmiColors[i].rgbReserved = 0;
+			m_pBmpInfo[nIdx]->bmiColors[i].rgbBlue = (BYTE)i;
+			m_pBmpInfo[nIdx]->bmiColors[i].rgbGreen = (BYTE)i;
+			m_pBmpInfo[nIdx]->bmiColors[i].rgbRed = (BYTE)i;
+			m_pBmpInfo[nIdx]->bmiColors[i].rgbReserved = 0;
 		}
 	}
 
-	m_pBmpInfo->bmiHeader.biWidth = nWidth;
-	m_pBmpInfo->bmiHeader.biHeight = -nHeight;
+	m_pBmpInfo[nIdx]->bmiHeader.biWidth = nWidth;
+	m_pBmpInfo[nIdx]->bmiHeader.biHeight = -nHeight;
 }
 
-void CFTech_JaiCameraDlg::OnDisplay()
+void CFTech_JaiCameraDlg::OnDisplayCam1()
 {
-	CClientDC dc(GetDlgItem(IDC_VIEW_CAMERA));
+	CClientDC dc(GetDlgItem(IDC_VIEW_CAMERA1));
 	CRect rect;
-	GetDlgItem(IDC_VIEW_CAMERA)->GetClientRect(&rect);
+	GetDlgItem(IDC_VIEW_CAMERA1)->GetClientRect(&rect);
 
 	dc.SetStretchBltMode(COLORONCOLOR); 
 
-	BYTE *pBuffer = m_Camera.GetImageBuffer();
-	StretchDIBits(dc.GetSafeHdc(), 0, 0, rect.Width(), rect.Height(), 0, 0, m_nWidth, m_nHeight, pBuffer, m_pBmpInfo, DIB_RGB_COLORS, SRCCOPY);
+	BYTE *pBuffer = m_Camera[0].GetImageBuffer();
+	StretchDIBits(dc.GetSafeHdc(), 0, 0, rect.Width(), rect.Height(), 0, 0, m_nWidth[0], m_nHeight[0], pBuffer, m_pBmpInfo[0], DIB_RGB_COLORS, SRCCOPY);
+}
+
+void CFTech_JaiCameraDlg::OnDisplayCam2()
+{
+	CClientDC dc(GetDlgItem(IDC_VIEW_CAMERA2));
+	CRect rect;
+	GetDlgItem(IDC_VIEW_CAMERA2)->GetClientRect(&rect);
+
+	dc.SetStretchBltMode(COLORONCOLOR); 
+
+	BYTE *pBuffer = m_Camera[1].GetImageBuffer();
+	StretchDIBits(dc.GetSafeHdc(), 0, 0, rect.Width(), rect.Height(), 0, 0, m_nWidth[1], m_nHeight[1], pBuffer, m_pBmpInfo[1], DIB_RGB_COLORS, SRCCOPY);
 }
 
 void CFTech_JaiCameraDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	if (m_pBmpInfo != NULL)
+	for (int i=0; i<MAX_CAMERA; i++)
 	{
-		delete []m_pBmpInfo;
-		m_pBmpInfo = NULL;
-	}
+		if (m_pThDsp[i] != NULL)
+		{
+			m_bThDspWork[i] = false;
 
-	if (m_pThDsp != NULL)
-	{
-		m_bThDspWork = false;
+			DWORD dwResult=0;
+			dwResult = WaitForSingleObject(m_pThDsp[i]->m_hThread, 5000);
+		}
 
-		DWORD dwResult=0;
-		dwResult = WaitForSingleObject(m_pThDsp->m_hThread, INFINITE);
-	}
+		if (m_pBmpInfo[i] != NULL)
+		{
+			delete []m_pBmpInfo[i];
+			m_pBmpInfo[i] = NULL;
+		}
 
-	if (m_Camera.IsConnected() == true)
-	{
-		if (m_Camera.IsActive() == true)
-			m_Camera.OnStopAcquisition();
+		if (m_Camera[i].IsConnected() == true)
+		{
+			if (m_Camera[i].IsActive() == true)
+				m_Camera[i].OnStopAcquisition();
 
-		m_Camera.OnDisconnect();
+			m_Camera[i].OnDisconnect();
+		}
 	}
 }
+
+
+void CFTech_JaiCameraDlg::OnBnClickedBtnConnection1()
+{
+	CString caption = _T("");
+	GetDlgItemText(IDC_BTN_CONNECTION1, caption);
+	CListCtrl* pList = (CListCtrl*)GetDlgItem(IDC_LTC_LIST);
+	POSITION pos = pList->GetFirstSelectedItemPosition();
+	int nItem=-1;
+	bool ret = false;
+	while (pos)
+	{
+		nItem = pList->GetNextSelectedItem(pos);
+	}
+	if (nItem == -1) return;
+
+	if (caption == _T("Connect"))
+	{
+		ret = m_Camera[0].OnConnect(nItem);	
+		if (ret == true)
+		{
+			CString value=_T("");
+			m_Camera[0].GetDeviceModelName(value);
+			SetDlgItemText(IDC_LB_MODEL1, value);
+			
+			value = m_Camera[0].GetInterface();
+			if (value.Find(_T("GIGE")) != -1)
+				m_Camera[0].GetSerialNumber(true,value);
+			else if (value.Find(_T("USB")) != -1)
+				m_Camera[0].GetSerialNumber(false,value);
+
+			SetDlgItemText(IDC_LB_SN1, value);
+
+			int w=0,h=0,bpp=0;
+			w = m_Camera[0].GetWidth();
+			h = m_Camera[0].GetHeight();
+			bpp =m_Camera[0].GetBpp();
+
+			m_nWidth[0] = w;
+			m_nHeight[0] = h;
+			m_nBpp[0] = bpp;
+
+			CreateBmpInfo(0,m_nWidth[0],m_nHeight[0],m_nBpp[0]);
+
+			SetDlgItemText(IDC_BTN_CONNECTION1, _T("Disconnect"));
+		}
+
+	}
+	else
+	{
+		m_Camera[0].OnDisconnect();
+
+		SetDlgItemText(IDC_LB_MODEL1, _T(""));
+		SetDlgItemText(IDC_LB_SN1, _T(""));
+
+		SetDlgItemText(IDC_BTN_CONNECTION1, _T("Connect"));
+	}
+}
+
+
+void CFTech_JaiCameraDlg::OnBnClickedBtnAcq1()
+{
+	CString caption = _T("");
+	GetDlgItemText(IDC_BTN_ACQ1, caption);
+	bool ret = false;
+
+	if (caption == _T("Start"))
+	{
+		ret = m_Camera[0].OnStartAcquisition();
+		if (ret == true)
+		{
+			m_bThDspWork[0] = true;
+			m_pThDsp[0] = AfxBeginThread(DisplayThread1, this);
+			SetDlgItemText(IDC_BTN_ACQ1, _T("Stop"));
+		}
+	}
+	else
+	{
+		m_bThDspWork[0] = false;
+		WaitForSingleObject(m_pThDsp[0]->m_hThread, 5000);
+
+		ret = m_Camera[0].OnStopAcquisition();
+		if (ret == true)
+			SetDlgItemText(IDC_BTN_ACQ1, _T("Start"));
+	}
+}
+
+
+void CFTech_JaiCameraDlg::OnBnClickedBtnConnection2()
+{
+	CString caption = _T("");
+	GetDlgItemText(IDC_BTN_CONNECTION2, caption);
+	CListCtrl* pList = (CListCtrl*)GetDlgItem(IDC_LTC_LIST);
+	POSITION pos = pList->GetFirstSelectedItemPosition();
+	int nItem=-1;
+	bool ret = false;
+	while (pos)
+	{
+		nItem = pList->GetNextSelectedItem(pos);
+	}
+	if (nItem == -1) return;
+
+	if (caption == _T("Connect"))
+	{
+		ret = m_Camera[1].OnConnect(nItem);
+		//ret = m_Camera[1].OnConnect(1, false);
+		if (ret == true)
+		{
+			CString value=_T("");
+			m_Camera[1].GetDeviceModelName(value);
+			SetDlgItemText(IDC_LB_MODEL2, value);
+
+			value = m_Camera[1].GetInterface();
+			if (value.Find(_T("GIGE")) != -1)
+				m_Camera[1].GetSerialNumber(true,value);
+			else if (value.Find(_T("USB")) != -1)
+				m_Camera[1].GetSerialNumber(false,value);
+
+			SetDlgItemText(IDC_LB_SN2, value);
+
+			int w=0,h=0,bpp=0;
+			w = m_Camera[1].GetWidth();
+			h = m_Camera[1].GetHeight();
+			bpp =m_Camera[1].GetBpp();
+
+			m_nWidth[1] = w;
+			m_nHeight[1] = h;
+			m_nBpp[1] = bpp;
+
+			CreateBmpInfo(1,m_nWidth[1],m_nHeight[1],m_nBpp[1]);
+
+			SetDlgItemText(IDC_BTN_CONNECTION2, _T("Disconnect"));
+		}
+
+	}
+	else
+	{
+		m_Camera[1].OnDisconnect();
+
+		SetDlgItemText(IDC_LB_MODEL2, _T(""));
+		SetDlgItemText(IDC_LB_SN2, _T(""));
+
+		SetDlgItemText(IDC_BTN_CONNECTION2, _T("Connect"));
+	}
+}
+
+
+void CFTech_JaiCameraDlg::OnBnClickedBtnAcq2()
+{
+	CString caption = _T("");
+	GetDlgItemText(IDC_BTN_ACQ2, caption);
+	bool ret = false;
+
+	if (caption == _T("Start"))
+	{
+		ret = m_Camera[1].OnStartAcquisition();
+		if (ret == true)
+		{
+			m_bThDspWork[1] = true;
+			m_pThDsp[1] = AfxBeginThread(DisplayThread2, this);
+			SetDlgItemText(IDC_BTN_ACQ2, _T("Stop"));
+		}
+	}
+	else
+	{
+		m_bThDspWork[1] = false;
+		WaitForSingleObject(m_pThDsp[1]->m_hThread, 5000);
+
+		ret = m_Camera[1].OnStopAcquisition();
+		if (ret == true)
+			SetDlgItemText(IDC_BTN_ACQ2, _T("Start"));
+	}
+}
+
+

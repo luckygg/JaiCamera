@@ -1,10 +1,10 @@
 //----------------------------------------------------------
 // JAI Camera Class
-// JAI SDK 2.1.6.8 version / SDK 1.4.1 version
+// JAI SDK 3.0.1.4 JAI SDK 2.1.6.8 version / SDK 1.4.1 version
 //----------------------------------------------------------
 // Programmed by William Kim
 //----------------------------------------------------------
-// Last Update : 2017-01-11 19:24
+// Last Update : 2017-02-23 16:06
 // Modified by William Kim
 //----------------------------------------------------------
 
@@ -13,22 +13,23 @@
 #include <jai_factory.h>
 #pragma comment (lib,"Jai_Factory")
 
-#define NODE_WIDTH			(int8_t*)"Width"
-#define NODE_HEIGHT			(int8_t*)"Height"
-#define NODE_PIXELFORMAT	(int8_t*)"PixelFormat"
-#define NODE_USERID			(int8_t*)"DeviceUserID"
-#define NODE_MODELNAME		(int8_t*)"DeviceModelName"
-#define NODE_DEVICEID		(int8_t*)"DeviceID"
-#define NODE_OFFSETX		(int8_t*)"OffsetX"
-#define NODE_OFFSETY		(int8_t*)"OffsetY"
-#define NODE_ACQMODE		(int8_t*)"AcquisitionMode"
-#define NODE_ACQFPS			(int8_t*)"AcquisitionFrameRate"
-#define NODE_TRGMODE		(int8_t*)"TriggerMode"
-#define NODE_TRGSRC			(int8_t*)"TriggerSource"
-#define NODE_EXPMODE		(int8_t*)"ExposureMode"
-#define NODE_EXPTIME		(int8_t*)"ExposureTimeRaw"
-#define NODE_ACQSTART		(int8_t*)"AcquisitionStart"
-#define NODE_ACQSTOP		(int8_t*)"AcquisitionStop"
+#define NODE_WIDTH				(int8_t*)"Width"
+#define NODE_HEIGHT				(int8_t*)"Height"
+#define NODE_PIXELFORMAT		(int8_t*)"PixelFormat"
+#define NODE_USERID				(int8_t*)"DeviceUserID"
+#define NODE_MODELNAME			(int8_t*)"DeviceModelName"
+#define NODE_SERIALNUMBER_GIGE	(int8_t*)"DeviceSerialNumber"
+#define NODE_SERIALNUMBER_USB	(int8_t*)"DeviceID"
+#define NODE_OFFSETX			(int8_t*)"OffsetX"
+#define NODE_OFFSETY			(int8_t*)"OffsetY"
+#define NODE_ACQMODE			(int8_t*)"AcquisitionMode"
+#define NODE_ACQFPS				(int8_t*)"AcquisitionFrameRate"
+#define NODE_TRGMODE			(int8_t*)"TriggerMode"
+#define NODE_TRGSRC				(int8_t*)"TriggerSource"
+#define NODE_EXPMODE			(int8_t*)"ExposureMode"
+#define NODE_EXPTIME			(int8_t*)"ExposureTimeRaw"
+#define NODE_ACQSTART			(int8_t*)"AcquisitionStart"
+#define NODE_ACQSTOP			(int8_t*)"AcquisitionStop"
 
 namespace JAI_STANDARD{
 
@@ -52,10 +53,13 @@ public :
 	bool GetModelName(int nIdx, CString &strModel);
 	bool GetSerialNumber(int nIdx, CString &strSerial);
 	bool GetIPAddress(int nIdx, CString &strIP);
-
+	CString GetLastErrorMessage() { return m_strErrMsg; }
 private :
-	FACTORY_HANDLE m_hFactory;
+	FACTORY_HANDLE m_hSysFactory;
+	CString m_strErrMsg;
+	CString GetErrorMsg(J_STATUS_TYPE ErrCode);
 };
+
 class CJaiCamera
 {
 public:
@@ -63,7 +67,7 @@ public:
 	~CJaiCamera(void);
 
 public :
-	bool OnConnect(int nIdx, bool bColorConvert);
+	bool OnConnect(int nIdx);
 	bool OnDisconnect();
 
 	//----- 영상 취득 제어 -----//
@@ -88,11 +92,15 @@ public :
 	bool OnCalculateWhiteBalance();
 
 	//----- 확인 및 반환 함수 -----//
+	CString GetLastErrorMessage() { return m_strErrMsg; }
+	int GetWidth() { return m_nWidth; }
+	int GetHeight() { return m_nHeight; }
+	int GetBpp() { return m_nBpp; }
 	bool IsConnected() { return m_isConnected; }
 	bool IsActive() { return m_isActived; }
 	bool GetDeviceUserID(CString &strValue);				// Device User ID 반환.
 	bool GetDeviceModelName(CString &strValue);				// Device Model Name 반환.
-	bool GetSerialNumber(CString &strValue);				// Serial Number 반환.
+	bool GetSerialNumber(bool bGigE, CString &strValue);	// Serial Number 반환.
 	bool GetOffsetX(int &nValue);							// Offset X 반환.
 	bool GetOffsetY(int &nValue);							// Offset Y 반환.
 	bool GetAcquisitionMode(CString &strValue);				// Acquisition Mode 반환.
@@ -102,9 +110,7 @@ public :
 	bool GetExposureMode(CString &strValue);				// Exposure Mode 반환.
 	bool GetExposureTimeRaw(int &nValue);					// Exposure Time 반환.
 	bool GetPixelFormat(CString &strValue);					// Pixel Format 반환.
-	bool GetWidth(int &nValue);
-	bool GetHeight(int &nValue);
-	bool GetBpp(int &nValue);
+	CString GetInterface() { return m_strInterface; }
 	BYTE* GetImageBuffer() { return m_pbyBuffer; }			// Buffer 반환.
 
 	//----- 설정 함수 -----//
@@ -122,7 +128,7 @@ public :
 	HANDLE GetHandleGrabDone() { return m_hGrabDone; }
 	void ResetHandleGrabDone() { ResetEvent(m_hGrabDone); }
 private :
-	FACTORY_HANDLE	m_hFactory;
+	//FACTORY_HANDLE	m_hFactory;
 	CAM_HANDLE      m_hCamera;
 	THRD_HANDLE     m_hThread;
 	
@@ -131,20 +137,32 @@ private :
 	BYTE*			m_pbyBuffer;
 	BITMAPINFO*		m_pBitmapInfo;
 
+	CString m_strInterface;
+	CString m_strErrMsg;
+
 	int	m_nWidth;
 	int	m_nHeight;
 	int	m_nBpp;
 	int	m_nGainR;
 	int	m_nGainG;
 	int	m_nGainB;
+
 	bool m_isConnected;
 	bool m_isActived;
 	bool m_isColorConvert;
 	bool m_is3CCD;
 
+	
+	CString GetErrorMsg(J_STATUS_TYPE ErrCode);
+
 	bool OpenFactory();
 	bool CloseFactory();
 	void StreamCBFunc(J_tIMAGE_INFO * pAqImageInfo);
+
+	bool GetWidth(int &nValue);
+	bool GetHeight(int &nValue);
+	bool GetBpp(int &nValue);
+
 	void OnCreateBmpInfo(int nWidth, int nHeight, int nBpp);
 
 	bool GetValueString(int8_t* pNodeName, CString &strValue);

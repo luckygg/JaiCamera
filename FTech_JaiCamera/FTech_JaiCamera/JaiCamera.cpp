@@ -3,8 +3,10 @@
 
 using namespace JAI_STANDARD;
 
-CString g_strErrMsg=_T("");
-CString GetErrorMsg(J_STATUS_TYPE ErrCode)
+FACTORY_HANDLE	g_hFactory;
+
+
+CString CJaiSystem::GetErrorMsg(J_STATUS_TYPE ErrCode)
 {
 	CString strErrMsg=_T("");
 	switch(ErrCode)
@@ -31,14 +33,20 @@ CString GetErrorMsg(J_STATUS_TYPE ErrCode)
 
 CJaiSystem::CJaiSystem(void)
 {
-	m_hFactory = NULL;
+	m_hSysFactory = NULL;
 
-	J_Factory_Open((int8_t*)"", &m_hFactory);
+	J_Factory_Open((int8_t*)"", &m_hSysFactory);
+
+	m_strErrMsg=_T("");
 }
 
 CJaiSystem::~CJaiSystem(void)
 {
-	J_Factory_Close(m_hFactory);
+	if (m_hSysFactory != NULL)
+	{
+		J_Factory_Close(m_hSysFactory);
+		m_hSysFactory = NULL;
+	}
 }
 
 bool CJaiSystem::SearchDevices(int &nValue)
@@ -47,17 +55,17 @@ bool CJaiSystem::SearchDevices(int &nValue)
 	uint32_t iNumDev=0;
 	bool8_t bHasChange=0;
 	
-	status = J_Factory_UpdateCameraList(m_hFactory, &bHasChange);
+	status = J_Factory_UpdateCameraList(m_hSysFactory, &bHasChange);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
-	status = J_Factory_GetNumOfCameras(m_hFactory, &iNumDev);
+	status = J_Factory_GetNumOfCameras(m_hSysFactory, &iNumDev);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -68,7 +76,7 @@ bool CJaiSystem::SearchDevices(int &nValue)
 
 bool CJaiSystem::GetManufacture(int nIdx, CString &strVendor)
 {
-	if (m_hFactory == NULL) return false;
+	if (m_hSysFactory == NULL) return false;
 
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iSize=0;
@@ -76,12 +84,12 @@ bool CJaiSystem::GetManufacture(int nIdx, CString &strVendor)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hFactory, sCameraId, CAM_INFO_MANUFACTURER, Value, &iSize);
+	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_MANUFACTURER, Value, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -92,7 +100,7 @@ bool CJaiSystem::GetManufacture(int nIdx, CString &strVendor)
 }
 bool CJaiSystem::GetInterface(int nIdx, CString &strInterface)
 {
-	if (m_hFactory == NULL) return false;
+	if (g_hFactory == NULL) return false;
 
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iSize=0;
@@ -100,12 +108,12 @@ bool CJaiSystem::GetInterface(int nIdx, CString &strInterface)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hFactory, sCameraId, CAM_INFO_INTERFACE_ID, Value, &iSize);
+	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_INTERFACE_ID, Value, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -116,7 +124,7 @@ bool CJaiSystem::GetInterface(int nIdx, CString &strInterface)
 }
 bool CJaiSystem::GetModelName(int nIdx, CString &strModel)
 {
-	if (m_hFactory == NULL) return false;
+	if (g_hFactory == NULL) return false;
 
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iSize=0;
@@ -124,12 +132,12 @@ bool CJaiSystem::GetModelName(int nIdx, CString &strModel)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hFactory, sCameraId, CAM_INFO_MODELNAME, Value, &iSize);
+	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_MODELNAME, Value, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -140,7 +148,7 @@ bool CJaiSystem::GetModelName(int nIdx, CString &strModel)
 }
 bool CJaiSystem::GetSerialNumber(int nIdx, CString &strSerial)
 {
-	if (m_hFactory == NULL) return false;
+	if (g_hFactory == NULL) return false;
 
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iSize=0;
@@ -148,12 +156,12 @@ bool CJaiSystem::GetSerialNumber(int nIdx, CString &strSerial)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hFactory, sCameraId, CAM_INFO_SERIALNUMBER, Value, &iSize);
+	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_SERIALNUMBER, Value, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -164,7 +172,7 @@ bool CJaiSystem::GetSerialNumber(int nIdx, CString &strSerial)
 }
 bool CJaiSystem::GetIPAddress(int nIdx, CString &strIP)
 {
-	if (m_hFactory == NULL) return false;
+	if (g_hFactory == NULL) return false;
 
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iSize=0;
@@ -172,12 +180,12 @@ bool CJaiSystem::GetIPAddress(int nIdx, CString &strIP)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hFactory, sCameraId, CAM_INFO_IP, Value, &iSize);
+	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_IP, Value, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -189,7 +197,7 @@ bool CJaiSystem::GetIPAddress(int nIdx, CString &strIP)
 
 CJaiCamera::CJaiCamera(void)
 {
-	m_hFactory		= NULL;
+	g_hFactory		= NULL;
 	m_hCamera		= NULL;
 	m_hThread		= NULL;
 	m_pbyBuffer		= NULL;
@@ -207,6 +215,8 @@ CJaiCamera::CJaiCamera(void)
 	m_isActived		= false;
 	m_isColorConvert= false;
 	m_is3CCD		= false;
+
+	m_strInterface = _T("");
 
 	m_hGrabDone = CreateEvent(NULL,TRUE,FALSE,NULL);
 	ResetEvent(m_hGrabDone);
@@ -248,11 +258,14 @@ bool CJaiCamera::OpenFactory()
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 
-	status = J_Factory_Open((int8_t*)"", &m_hFactory);
-	if(status != J_ST_SUCCESS)
+	if (g_hFactory == NULL)
 	{
-		g_strErrMsg = GetErrorMsg(status);
-		return false;
+		status = J_Factory_Open((int8_t*)"", &g_hFactory);
+		if(status != J_ST_SUCCESS)
+		{
+			m_strErrMsg = GetErrorMsg(status);
+			return false;
+		}
 	}
 
 	return true;
@@ -262,22 +275,22 @@ bool CJaiCamera::CloseFactory()
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 
-	if(m_hFactory != NULL)
+	if(g_hFactory != NULL)
 	{
-		status = J_Factory_Close(m_hFactory);
+		status = J_Factory_Close(g_hFactory);
 		if(status != J_ST_SUCCESS)
 		{
-			g_strErrMsg = GetErrorMsg(status);
+			m_strErrMsg = GetErrorMsg(status);
 			return false;
 		}
 
-		m_hFactory = NULL;
+		g_hFactory = NULL;
 	}
 
 	return true;
 }
 
-bool CJaiCamera::OnConnect(int nIdx, bool bColorConvert)
+bool CJaiCamera::OnConnect(int nIdx)
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iNumDev=0;
@@ -285,44 +298,48 @@ bool CJaiCamera::OnConnect(int nIdx, bool bColorConvert)
 	bool8_t bHasChange=0;
 	int8_t sCameraId[J_CAMERA_ID_SIZE] = {0,};
 	
-	status = J_Factory_UpdateCameraList(m_hFactory, &bHasChange);
-	if(status != J_ST_SUCCESS)
-	{
-		g_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
-
-	status = J_Factory_GetNumOfCameras(m_hFactory, &iNumDev);
-	if(status != J_ST_SUCCESS)
-	{
-		g_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
-
-	if (iNumDev == 0)
-	{
-		g_strErrMsg = _T("There are no devices on the system.");
-		return false;
-	}
+	//status = J_Factory_UpdateCameraList(g_hFactory, &bHasChange);
+	//if(status != J_ST_SUCCESS)
+	//{
+	//	m_strErrMsg = GetErrorMsg(status);
+	//	return false;
+	//}
+	//
+	//status = J_Factory_GetNumOfCameras(g_hFactory, &iNumDev);
+	//if(status != J_ST_SUCCESS)
+	//{
+	//	m_strErrMsg = GetErrorMsg(status);
+	//	return false;
+	//}
+	//
+	//if (iNumDev == 0)
+	//{
+	//	m_strErrMsg = _T("There are no devices on the system.");
+	//	return false;
+	//}
 	
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nIdx, sCameraId, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
-	status = J_Camera_Open(m_hFactory, sCameraId, &m_hCamera);
+	status = J_Camera_Open(g_hFactory, sCameraId, &m_hCamera);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
 	CString model=_T("");
 	GetDeviceModelName(model);
+	model.MakeUpper();
 	if (model.Find(_T("AT")) != -1) m_is3CCD = true;
+	if (model.Find(_T("GE")) != -1) m_strInterface = _T("GIGE");
+	else if (model.Find(_T("CL")) != -1) m_strInterface = _T("CL");
+	else if (model.Find(_T("USB")) != -1) m_strInterface = _T("USB");
 
 	int value=0;
 	bool ret=false;
@@ -338,8 +355,14 @@ bool CJaiCamera::OnConnect(int nIdx, bool bColorConvert)
 	if(ret != true) return false;
 	m_nBpp = value;
 
-	m_isColorConvert = bColorConvert;
-	m_isColorConvert && (m_nBpp == 8)? m_nBpp *= 3 : m_nBpp;
+	CString format=_T("");
+	GetPixelFormat(format);
+	format.MakeUpper();
+	if (format.Find(_T("BAYER")) != -1)
+	{
+		m_nBpp *= 3;
+		m_isColorConvert = true;
+	}
 
 	m_pbyBuffer = new BYTE[m_nWidth * m_nHeight * m_nBpp / 8];
 	memset(m_pbyBuffer, 0, m_nWidth * m_nHeight * m_nBpp / 8);
@@ -402,7 +425,7 @@ bool CJaiCamera::OnDisconnect()
 		status = J_Camera_Close(m_hCamera);
 		if(status != J_ST_SUCCESS)
 		{
-			g_strErrMsg = GetErrorMsg(status);
+			m_strErrMsg = GetErrorMsg(status);
 			return false;
 		}
 
@@ -428,17 +451,23 @@ bool CJaiCamera::OnStartAcquisition()
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 
-	status = J_Image_OpenStream(m_hCamera, 0, reinterpret_cast<J_IMG_CALLBACK_OBJECT>(this), reinterpret_cast<J_IMG_CALLBACK_FUNCTION>(&CJaiCamera::StreamCBFunc), &m_hThread, (m_nWidth*m_nHeight*m_nBpp)/8);
+	status = J_Image_OpenStream(
+		m_hCamera, 
+		0, 
+		reinterpret_cast<J_IMG_CALLBACK_OBJECT>(this), 
+		reinterpret_cast<J_IMG_CALLBACK_FUNCTION>(&CJaiCamera::StreamCBFunc), 
+		&m_hThread, (m_nWidth*m_nHeight*m_nBpp)/8);
+
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
 	status = J_Camera_ExecuteCommand(m_hCamera, NODE_ACQSTART);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 	
@@ -490,20 +519,20 @@ bool CJaiCamera::SetHardTriggerMode()
 		if ((status == J_ST_SUCCESS) && (hNode != NULL))
 		{
 			status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerSelector", (int8_t*)"FrameStart");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerMode", (int8_t*)"On");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"TriggerSource", (int8_t*)"Line5");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"SequenceMode", (int8_t*)"Off");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 		}
 		else
 		{
-			g_strErrMsg = GetErrorMsg(status);
+			m_strErrMsg = GetErrorMsg(status);
 			return false;
 		}
 	}
@@ -525,27 +554,27 @@ bool CJaiCamera::SetSoftTriggerMode()
 		if ((status == J_ST_SUCCESS) && (hNode != NULL))
 		{
 			status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerSelector", (int8_t*)"FrameStart");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerMode", (int8_t*)"On");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"TriggerSource", (int8_t*)"Software");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"SequenceMode", (int8_t*)"Off");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 		}
 		else
 		{
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"ExposureMode", (int8_t*)"EdgePreSelect");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"LineSelector", (int8_t*)"CameraTrigger0");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"LineSource", (int8_t*)"SoftwareTrigger0");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 		}
 	} 
 
@@ -564,15 +593,15 @@ bool CJaiCamera::SetContinuousMode()
 		if ((status == J_ST_SUCCESS) && (hNode != NULL))
 		{
 			status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerSelector", (int8_t*)"FrameStart");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 			status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerMode", (int8_t*)"Off");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 		}
 		else
 		{
 			status = J_Camera_SetValueString(m_hCamera,(int8_t*)"ExposureMode", (int8_t*)"Continuous");
-			if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+			if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 		}
 	} 
 
@@ -588,18 +617,18 @@ bool CJaiCamera::OnTriggerEvent()
 	if ((status == J_ST_SUCCESS) && (hNode != NULL))
 	{
 		status = J_Camera_SetValueString(m_hCamera, (int8_t*)"TriggerSelector", (int8_t*)"FrameStart");
-		if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+		if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 		status = J_Camera_ExecuteCommand(m_hCamera, (int8_t*)"TriggerSoftware");
-		if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+		if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 	}
 	else
 	{
 		status = J_Camera_SetValueInt64(m_hCamera, (int8_t*)"SoftwareTrigger0", 1);
-		if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+		if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 
 		status = J_Camera_SetValueInt64(m_hCamera, (int8_t*)"SoftwareTrigger0", 0);
-		if(status != J_ST_SUCCESS) { g_strErrMsg = GetErrorMsg(status); return false; }
+		if(status != J_ST_SUCCESS) { m_strErrMsg = GetErrorMsg(status); return false; }
 	}
 
 	return true;
@@ -616,7 +645,7 @@ bool CJaiCamera::OnCalculateWhiteBalance()
 	status = J_Camera_GetValueInt64(m_hCamera, (int8_t*)"Width", &int64Val);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 	iWidth = (int)int64Val;
@@ -624,7 +653,7 @@ bool CJaiCamera::OnCalculateWhiteBalance()
 	status = J_Camera_GetValueInt64(m_hCamera, (int8_t*)"Height", &int64Val);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 	iHeight = (int)int64Val;
@@ -637,7 +666,7 @@ bool CJaiCamera::OnCalculateWhiteBalance()
 	status = J_Image_GetAverage(&m_ImgColor, &pMeasureRect, &resultcolor);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 
@@ -701,7 +730,7 @@ bool CJaiCamera::OnStopAcquisition()
 		status = J_Camera_ExecuteCommand(m_hCamera, NODE_ACQSTOP);
 		if(status != J_ST_SUCCESS)
 		{
-			g_strErrMsg = GetErrorMsg(status);
+			m_strErrMsg = GetErrorMsg(status);
 			return false;
 		}
 	}
@@ -712,7 +741,7 @@ bool CJaiCamera::OnStopAcquisition()
 		status = J_Image_CloseStream(m_hThread);
 		if(status != J_ST_SUCCESS)
 		{
-			g_strErrMsg = GetErrorMsg(status);
+			m_strErrMsg = GetErrorMsg(status);
 			return false;
 		}
 
@@ -734,9 +763,12 @@ bool CJaiCamera::GetDeviceModelName(CString &strValue)
 	return GetValueString(NODE_MODELNAME, strValue);
 }
 
-bool CJaiCamera::GetSerialNumber(CString &strValue)
+bool CJaiCamera::GetSerialNumber(bool bGigE, CString &strValue)
 {
-	return GetValueString(NODE_DEVICEID, strValue);
+	if (bGigE == true)
+		return GetValueString(NODE_SERIALNUMBER_GIGE, strValue);
+	else
+		return GetValueString(NODE_SERIALNUMBER_USB, strValue);
 }
 
 bool CJaiCamera::GetOffsetX(int &nValue)
@@ -884,7 +916,7 @@ bool CJaiCamera::GetValueString(int8_t* pNodeName, CString &strValue)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -895,7 +927,7 @@ bool CJaiCamera::GetValueString(int8_t* pNodeName, CString &strValue)
 	status = J_Camera_GetValueString(m_hCamera, pNodeName, (int8_t*)value, &size);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}	
 
@@ -908,7 +940,7 @@ bool CJaiCamera::SetValueString(int8_t* pNodeName, CString strValue)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -920,7 +952,7 @@ bool CJaiCamera::SetValueString(int8_t* pNodeName, CString strValue)
 	status = J_Camera_SetValueString(m_hCamera, pNodeName, (int8_t*)path);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
@@ -931,7 +963,7 @@ bool CJaiCamera::GetValueInt(int8_t* pNodeName, int &nValue)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -940,7 +972,7 @@ bool CJaiCamera::GetValueInt(int8_t* pNodeName, int &nValue)
 	status = J_Camera_GetValueInt64(m_hCamera, pNodeName, &value);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 
@@ -953,7 +985,7 @@ bool CJaiCamera::SetValueInt(int8_t* pNodeName, int nValue)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -962,7 +994,7 @@ bool CJaiCamera::SetValueInt(int8_t* pNodeName, int nValue)
 	status = J_Camera_SetValueInt64(m_hCamera, pNodeName, nValue);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 
@@ -973,7 +1005,7 @@ bool CJaiCamera::GetValueDouble(int8_t* pNodeName, double &dValue)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -982,7 +1014,7 @@ bool CJaiCamera::GetValueDouble(int8_t* pNodeName, double &dValue)
 	status = J_Camera_GetValueDouble(m_hCamera, pNodeName, &value);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 
@@ -995,7 +1027,7 @@ bool CJaiCamera::SetValueDouble(int8_t* pNodeName, double dValue)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -1004,7 +1036,7 @@ bool CJaiCamera::SetValueDouble(int8_t* pNodeName, double dValue)
 	status = J_Camera_SetValueDouble(m_hCamera, pNodeName, dValue);
 	if (status != J_ST_SUCCESS) 
 	{ 
-		g_strErrMsg = GetErrorMsg(status); 
+		m_strErrMsg = GetErrorMsg(status); 
 		return false; 
 	}
 
@@ -1015,7 +1047,7 @@ bool CJaiCamera::OnExecuteCommand(int8_t* pNodeName)
 {
 	if(m_hCamera == NULL)
 	{
-		g_strErrMsg = _T("Device is not connected.");
+		m_strErrMsg = _T("Device is not connected.");
 		return false;
 	}
 
@@ -1024,9 +1056,34 @@ bool CJaiCamera::OnExecuteCommand(int8_t* pNodeName)
 	status = J_Camera_ExecuteCommand(m_hCamera, pNodeName);
 	if(status != J_ST_SUCCESS)
 	{
-		g_strErrMsg = GetErrorMsg(status);
+		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}	
 
 	return true;
+}
+
+CString CJaiCamera::GetErrorMsg(J_STATUS_TYPE ErrCode)
+{
+	CString strErrMsg=_T("");
+	switch(ErrCode)
+	{
+	case J_ST_SUCCESS             :	strErrMsg = _T("OK."								); break; 
+	case J_ST_INVALID_BUFFER_SIZE :	strErrMsg = _T("Invalid buffer size."				); break; 
+	case J_ST_INVALID_HANDLE      :	strErrMsg = _T("Invalid handle."					); break; 
+	case J_ST_INVALID_ID          :	strErrMsg = _T("Invalid ID."						); break; 
+	case J_ST_ACCESS_DENIED       :	strErrMsg = _T("Access denied."						); break; 
+	case J_ST_NO_DATA             :	strErrMsg = _T("No data."							); break; 
+	case J_ST_ERROR               :	strErrMsg = _T("Generic error code."				); break; 
+	case J_ST_INVALID_PARAMETER   :	strErrMsg = _T("Invalid parameter."					); break; 
+	case J_ST_TIMEOUT             :	strErrMsg = _T("Timeout."							); break; 
+	case J_ST_INVALID_FILENAME    :	strErrMsg = _T("Invalid file name."					); break; 
+	case J_ST_INVALID_ADDRESS     :	strErrMsg = _T("Invalid address."					); break; 
+	case J_ST_FILE_IO             :	strErrMsg = _T("File IO error."						); break; 
+	case J_ST_GC_ERROR            :	strErrMsg = _T("GenICam error."						); break; 
+	case J_ST_VALIDATION_ERROR    :	strErrMsg = _T("Settings File Validation Error."	); break; 
+	case J_ST_VALIDATION_WARNING  :	strErrMsg = _T("Settings File Validation Warning."	); break; 
+	}
+
+	return strErrMsg;
 }

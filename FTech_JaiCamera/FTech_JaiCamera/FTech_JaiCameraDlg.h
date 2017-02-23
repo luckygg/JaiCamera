@@ -4,6 +4,7 @@
 
 #pragma once
 
+#define MAX_CAMERA 2
 #include "JaiCamera.h"
 
 // CFTech_JaiCameraDlg dialog
@@ -20,19 +21,20 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 public :
-	JAI_STANDARD::CJaiCamera m_Camera;
-	void OnDisplay();
-	bool m_bThDspWork;
+	JAI_STANDARD::CJaiCamera m_Camera[MAX_CAMERA];
+	void OnDisplayCam1();
+	void OnDisplayCam2();
+	bool m_bThDspWork[MAX_CAMERA];
 
 private :
-	int m_nWidth;
-	int m_nHeight;
-	int m_nBpp;
-	CWinThread* m_pThDsp;
-	BITMAPINFO* m_pBmpInfo;
+	int m_nWidth[MAX_CAMERA];
+	int m_nHeight[MAX_CAMERA];
+	int m_nBpp[MAX_CAMERA];
 	
-	void CreateBmpInfo(int nWidth, int nHeight, int nBpp);
-
+	CWinThread* m_pThDsp[MAX_CAMERA];
+	BITMAPINFO* m_pBmpInfo[MAX_CAMERA];
+	
+	void CreateBmpInfo(int nIdx, int nWidth, int nHeight, int nBpp);
 // Implementation
 protected:
 	HICON m_hIcon;
@@ -43,8 +45,10 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg void OnBnClickedBtnConnection();
 	afx_msg void OnBnClickedBtnRefresh();
-	afx_msg void OnBnClickedBtnAcq();
 	afx_msg void OnDestroy();
+	afx_msg void OnBnClickedBtnConnection1();
+	afx_msg void OnBnClickedBtnAcq1();
+	afx_msg void OnBnClickedBtnConnection2();
+	afx_msg void OnBnClickedBtnAcq2();
 };
