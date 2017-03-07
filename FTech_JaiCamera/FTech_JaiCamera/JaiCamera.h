@@ -4,7 +4,7 @@
 //----------------------------------------------------------
 // Programmed by William Kim
 //----------------------------------------------------------
-// Last Update : 2017-02-23 16:06
+// Last Update : 2017-03-07 15:16
 // Modified by William Kim
 //----------------------------------------------------------
 
@@ -30,6 +30,8 @@
 #define NODE_EXPTIME			(int8_t*)"ExposureTimeRaw"
 #define NODE_ACQSTART			(int8_t*)"AcquisitionStart"
 #define NODE_ACQSTOP			(int8_t*)"AcquisitionStop"
+#define NODE_ACQMMODE			(int8_t*)"AcquisitionMode"
+#define NODE_ACQMFRMCNT			(int8_t*)"AcquisitionFrameCount"
 
 namespace JAI_STANDARD{
 
@@ -75,6 +77,9 @@ public :
 	bool OnStopAcquisition();
 
 	//----- 영상 취득 방식 선택 -----//
+	bool SetSingleFrameMode();
+	bool SetMultiFrameMode();
+	bool SetMultiFrameCount(int nValue);
 	bool SetContinuousMode();
 	bool SetSoftTriggerMode();
 	bool SetHardTriggerMode();

@@ -504,6 +504,21 @@ void CJaiCamera::StreamCBFunc(J_tIMAGE_INFO * pAqImageInfo)
 	SetEvent(m_hGrabDone);
 }
 
+bool CJaiCamera::SetSingleFrameMode()
+{
+	return SetValueString(NODE_ACQMODE, _T("SingleFrame"));
+}
+
+bool CJaiCamera::SetMultiFrameMode()
+{
+	return SetValueString(NODE_ACQMODE, _T("MultiFrame"));
+}
+
+bool CJaiCamera::SetMultiFrameCount(int nValue)
+{
+	return SetValueInt(NODE_ACQMFRMCNT, nValue);
+}
+
 bool CJaiCamera::SetHardTriggerMode()
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
@@ -584,6 +599,8 @@ bool CJaiCamera::SetSoftTriggerMode()
 bool CJaiCamera::SetContinuousMode()
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
+
+	if (SetValueString(NODE_ACQMODE, _T("Continuous")) == false) return false;
 
 	if(m_hCamera != NULL)
 	{
