@@ -6,99 +6,54 @@ using namespace JAI_STANDARD;
 FACTORY_HANDLE	g_hFactory;
 
 
-CString CJaiSystem::GetErrorMsg(J_STATUS_TYPE ErrCode)
+//CString CJaiSystem::GetErrorMsg(J_STATUS_TYPE ErrCode)
+//{
+//	CString strErrMsg=_T("");
+//	switch(ErrCode)
+//	{
+//	case J_ST_SUCCESS             :	strErrMsg = _T("OK."								); break; 
+//	case J_ST_INVALID_BUFFER_SIZE :	strErrMsg = _T("Invalid buffer size."				); break; 
+//	case J_ST_INVALID_HANDLE      :	strErrMsg = _T("Invalid handle."					); break; 
+//	case J_ST_INVALID_ID          :	strErrMsg = _T("Invalid ID."						); break; 
+//	case J_ST_ACCESS_DENIED       :	strErrMsg = _T("Access denied."						); break; 
+//	case J_ST_NO_DATA             :	strErrMsg = _T("No data."							); break; 
+//	case J_ST_ERROR               :	strErrMsg = _T("Generic error code."				); break; 
+//	case J_ST_INVALID_PARAMETER   :	strErrMsg = _T("Invalid parameter."					); break; 
+//	case J_ST_TIMEOUT             :	strErrMsg = _T("Timeout."							); break; 
+//	case J_ST_INVALID_FILENAME    :	strErrMsg = _T("Invalid file name."					); break; 
+//	case J_ST_INVALID_ADDRESS     :	strErrMsg = _T("Invalid address."					); break; 
+//	case J_ST_FILE_IO             :	strErrMsg = _T("File IO error."						); break; 
+//	case J_ST_GC_ERROR            :	strErrMsg = _T("GenICam error."						); break; 
+//	case J_ST_VALIDATION_ERROR    :	strErrMsg = _T("Settings File Validation Error."	); break; 
+//	case J_ST_VALIDATION_WARNING  :	strErrMsg = _T("Settings File Validation Warning."	); break; 
+//	}
+//
+//	return strErrMsg;
+//}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool CJaiCamera::GetNumberOfDevices(int &nValue)
 {
-	CString strErrMsg=_T("");
-	switch(ErrCode)
-	{
-	case J_ST_SUCCESS             :	strErrMsg = _T("OK."								); break; 
-	case J_ST_INVALID_BUFFER_SIZE :	strErrMsg = _T("Invalid buffer size."				); break; 
-	case J_ST_INVALID_HANDLE      :	strErrMsg = _T("Invalid handle."					); break; 
-	case J_ST_INVALID_ID          :	strErrMsg = _T("Invalid ID."						); break; 
-	case J_ST_ACCESS_DENIED       :	strErrMsg = _T("Access denied."						); break; 
-	case J_ST_NO_DATA             :	strErrMsg = _T("No data."							); break; 
-	case J_ST_ERROR               :	strErrMsg = _T("Generic error code."				); break; 
-	case J_ST_INVALID_PARAMETER   :	strErrMsg = _T("Invalid parameter."					); break; 
-	case J_ST_TIMEOUT             :	strErrMsg = _T("Timeout."							); break; 
-	case J_ST_INVALID_FILENAME    :	strErrMsg = _T("Invalid file name."					); break; 
-	case J_ST_INVALID_ADDRESS     :	strErrMsg = _T("Invalid address."					); break; 
-	case J_ST_FILE_IO             :	strErrMsg = _T("File IO error."						); break; 
-	case J_ST_GC_ERROR            :	strErrMsg = _T("GenICam error."						); break; 
-	case J_ST_VALIDATION_ERROR    :	strErrMsg = _T("Settings File Validation Error."	); break; 
-	case J_ST_VALIDATION_WARNING  :	strErrMsg = _T("Settings File Validation Warning."	); break; 
-	}
+	if (g_hFactory == NULL) return false;
 
-	return strErrMsg;
-}
-
-CJaiSystem::CJaiSystem(void)
-{
-	m_hSysFactory = NULL;
-
-	J_Factory_Open((int8_t*)"", &m_hSysFactory);
-
-	m_strErrMsg=_T("");
-}
-
-CJaiSystem::~CJaiSystem(void)
-{
-	if (m_hSysFactory != NULL)
-	{
-		J_Factory_Close(m_hSysFactory);
-		m_hSysFactory = NULL;
-	}
-}
-
-bool CJaiSystem::SearchDevices(int &nValue)
-{
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 	uint32_t iNumDev=0;
 	bool8_t bHasChange=0;
-	
-	status = J_Factory_UpdateCameraList(m_hSysFactory, &bHasChange);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
 
-	status = J_Factory_GetNumOfCameras(m_hSysFactory, &iNumDev);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
+	// Force Enable 안해도 Update Camera List or Get Num of Cameras 호출하면 자동으로 IP가 설정된다.
+	status = J_Factory_UpdateCameraList(g_hFactory, &bHasChange);
+	if(status != J_ST_SUCCESS) return false;
+
+	status = J_Factory_GetNumOfCameras(g_hFactory, &iNumDev);
+	if(status != J_ST_SUCCESS) return false;
 
 	nValue = (int)iNumDev;
 
 	return true;
 }
 
-bool CJaiSystem::GetManufacture(int nIdx, CString &strVendor)
-{
-	if (m_hSysFactory == NULL) return false;
-
-	J_STATUS_TYPE status = J_ST_SUCCESS;
-	uint32_t iSize=0;
-	int8_t Value[J_CAMERA_INFO_SIZE] = {0,};
-	int8_t sCameraId[J_CAMERA_ID_SIZE];
-
-	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
-	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_MANUFACTURER, Value, &iSize);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
-
-	char* pTmp = (char*)Value;
-	strVendor = pTmp;
-
-	return true;
-}
-bool CJaiSystem::GetInterface(int nIdx, CString &strInterface)
+bool CJaiCamera::GetInterfaceName(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -108,21 +63,17 @@ bool CJaiSystem::GetInterface(int nIdx, CString &strInterface)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_INTERFACE_ID, Value, &iSize);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
+	status = J_Factory_GetCameraInfo(g_hFactory, sCameraId, CAM_INFO_INTERFACE_ID, Value, &iSize);
+	if(status != J_ST_SUCCESS) return false;
 
-	char* pTmp = (char*)Value;
-	strInterface = pTmp;
+	strValue = (char*)Value;
 
 	return true;
 }
-bool CJaiSystem::GetModelName(int nIdx, CString &strModel)
+
+bool CJaiCamera::GetInterfaceType(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -132,21 +83,20 @@ bool CJaiSystem::GetModelName(int nIdx, CString &strModel)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
-	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_MODELNAME, Value, &iSize);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, sCameraId, &iSize);
+	
+	CString tmp;
+	tmp = (char*)sCameraId;
+	//"TL=>Euresys_CXP , INT=>PC1633 - Coaxlink Quad G3 (1-camera) - KQG00794 , DEV=>Device0"
+	int nPos1 = tmp.Find('>');
+	int nPos2 = tmp.Find(',');
 
-	char* pTmp = (char*)Value;
-	strModel = pTmp;
-
+	strValue = tmp.Mid(nPos1+1, nPos2-nPos1-2);
+	
 	return true;
 }
-bool CJaiSystem::GetSerialNumber(int nIdx, CString &strSerial)
+
+bool CJaiCamera::GetDeviceIPAddress(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -156,21 +106,17 @@ bool CJaiSystem::GetSerialNumber(int nIdx, CString &strSerial)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_SERIALNUMBER, Value, &iSize);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
-
-	char* pTmp = (char*)Value;
-	strSerial = pTmp;
-
+	status = J_Factory_GetCameraInfo(g_hFactory, sCameraId, CAM_INFO_IP, Value, &iSize);
+	if(status != J_ST_SUCCESS) return false;
+	
+	strValue = (char*)Value;
+	
 	return true;
 }
-bool CJaiSystem::GetIPAddress(int nIdx, CString &strIP)
+
+bool CJaiCamera::GetDeviceName(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -180,17 +126,52 @@ bool CJaiSystem::GetIPAddress(int nIdx, CString &strIP)
 	int8_t sCameraId[J_CAMERA_ID_SIZE];
 
 	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(m_hSysFactory, nIdx, sCameraId, &iSize);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, sCameraId, &iSize);
 	iSize = sizeof(Value);
-	status = J_Factory_GetCameraInfo(m_hSysFactory, sCameraId, CAM_INFO_IP, Value, &iSize);
-	if(status != J_ST_SUCCESS)
-	{
-		m_strErrMsg = GetErrorMsg(status);
-		return false;
-	}
+	status = J_Factory_GetCameraInfo(g_hFactory, sCameraId, CAM_INFO_MODELNAME, Value, &iSize);
+	if(status != J_ST_SUCCESS) return false;
 
-	char* pTmp = (char*)Value;
-	strIP = pTmp;
+	strValue = (char*)Value;
+
+	return true;
+}
+
+bool CJaiCamera::GetDeviceDefinedName(int nDvIdx, CString &strValue)
+{
+	if (g_hFactory == NULL) return false;
+
+	J_STATUS_TYPE status = J_ST_SUCCESS;
+	uint32_t iSize=0;
+	int8_t Value[J_CAMERA_INFO_SIZE] = {0,};
+	int8_t sCameraId[J_CAMERA_ID_SIZE];
+
+	iSize = sizeof(sCameraId);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, sCameraId, &iSize);
+	iSize = sizeof(Value);
+	status = J_Factory_GetCameraInfo(g_hFactory, sCameraId, CAM_INFO_USERNAME, Value, &iSize);
+	if(status != J_ST_SUCCESS) return false;
+
+	strValue = (char*)Value;
+
+	return true;
+}
+
+bool CJaiCamera::GetDeviceSerialNumber(int nDvIdx, CString &strValue)
+{
+	if (g_hFactory == NULL) return false;
+
+	J_STATUS_TYPE status = J_ST_SUCCESS;
+	uint32_t iSize=0;
+	int8_t Value[J_CAMERA_INFO_SIZE] = {0,};
+	int8_t sCameraId[J_CAMERA_ID_SIZE];
+
+	iSize = sizeof(sCameraId);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, sCameraId, &iSize);
+	iSize = sizeof(Value);
+	status = J_Factory_GetCameraInfo(g_hFactory, sCameraId, CAM_INFO_SERIALNUMBER, Value, &iSize);
+	if(status != J_ST_SUCCESS) return false;
+
+	strValue = (char*)Value;
 
 	return true;
 }
@@ -222,6 +203,8 @@ CJaiCamera::CJaiCamera(void)
 	ResetEvent(m_hGrabDone);
 	
 	OpenFactory();
+
+	//J_Factory_EnableForceIp(g_hFactory, true);
 }
 
 
@@ -290,56 +273,208 @@ bool CJaiCamera::CloseFactory()
 	return true;
 }
 
-bool CJaiCamera::OnConnect(int nIdx)
+bool CJaiCamera::OnConnect(int nDvIdx)
 {
 	J_STATUS_TYPE status = J_ST_SUCCESS;
-	uint32_t iNumDev=0;
 	uint32_t iSize=0;
-	bool8_t bHasChange=0;
-	int8_t sCameraId[J_CAMERA_ID_SIZE] = {0,};
+	int8_t szCameraId[J_CAMERA_ID_SIZE] = {0,};
 	
-	//status = J_Factory_UpdateCameraList(g_hFactory, &bHasChange);
-	//if(status != J_ST_SUCCESS)
-	//{
-	//	m_strErrMsg = GetErrorMsg(status);
-	//	return false;
-	//}
-	//
-	//status = J_Factory_GetNumOfCameras(g_hFactory, &iNumDev);
-	//if(status != J_ST_SUCCESS)
-	//{
-	//	m_strErrMsg = GetErrorMsg(status);
-	//	return false;
-	//}
-	//
-	//if (iNumDev == 0)
-	//{
-	//	m_strErrMsg = _T("There are no devices on the system.");
-	//	return false;
-	//}
-	
-	iSize = sizeof(sCameraId);
-	status = J_Factory_GetCameraIDByIndex(g_hFactory, nIdx, sCameraId, &iSize);
+	iSize = sizeof(szCameraId);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, szCameraId, &iSize);
 	if(status != J_ST_SUCCESS)
 	{
 		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
-	status = J_Camera_Open(g_hFactory, sCameraId, &m_hCamera);
+	status = J_Camera_Open(g_hFactory, szCameraId, &m_hCamera);
 	if(status != J_ST_SUCCESS)
 	{
 		m_strErrMsg = GetErrorMsg(status);
 		return false;
 	}
 
-	CString model=_T("");
-	GetDeviceModelName(model);
-	model.MakeUpper();
-	if (model.Find(_T("AT")) != -1) m_is3CCD = true;
-	if (model.Find(_T("GE")) != -1) m_strInterface = _T("GIGE");
-	else if (model.Find(_T("CL")) != -1) m_strInterface = _T("CL");
-	else if (model.Find(_T("USB")) != -1) m_strInterface = _T("USB");
+	CString strModel=_T("");
+	int8_t szTL[J_CAMERA_INFO_SIZE] = {0,};
+	iSize = sizeof(szTL);
+	status = J_Camera_GetTransportLayerName(m_hCamera, szTL, &iSize);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+	m_strInterface = (char*)szTL;
+
+	// Check 3CCD
+	GetDeviceModelName(strModel);
+	strModel.MakeUpper();
+	if (strModel.Find(_T("AT")) != -1) m_is3CCD = true;
+
+	int value=0;
+	bool ret=false;
+	ret = GetWidth(value);
+	if(ret != true) return false;
+	m_nWidth = value;
+
+	ret = GetHeight(value);
+	if(ret != true) return false;
+	m_nHeight = value;
+
+	ret = GetBpp(value);
+	if(ret != true) return false;
+	m_nBpp = value;
+
+	CString format=_T("");
+	GetPixelFormat(format);
+	format.MakeUpper();
+	if (format.Find(_T("BAYER")) != -1)
+	{
+		m_nBpp *= 3;
+		m_isColorConvert = true;
+	}
+
+	m_pbyBuffer = new BYTE[m_nWidth * m_nHeight * m_nBpp / 8];
+	memset(m_pbyBuffer, 0, m_nWidth * m_nHeight * m_nBpp / 8);
+
+	OnCreateBmpInfo(m_nWidth, m_nHeight, m_nBpp);
+
+	m_isConnected = true;
+	return true;
+}
+
+bool CJaiCamera::OnConnectID(CString strUserID)
+{
+	J_STATUS_TYPE status = J_ST_SUCCESS;
+	uint32_t iSize=0;
+	int8_t szCameraId[J_CAMERA_ID_SIZE] = {0,};
+
+	int nDevices=0, nDvIdx=-1;
+	GetNumberOfDevices(nDevices);
+
+	for (int i=0; i<nDevices; i++)
+	{
+		CString strID=_T("");
+		GetDeviceDefinedName(i, strID);
+		if (strUserID == strID)
+		{
+			nDvIdx = i;
+			break;
+		}
+	}
+
+	iSize = sizeof(szCameraId);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, szCameraId, &iSize);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+
+	status = J_Camera_Open(g_hFactory, szCameraId, &m_hCamera);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+
+	CString strModel=_T("");
+	int8_t szTL[J_CAMERA_INFO_SIZE] = {0,};
+	iSize = sizeof(szTL);
+	status = J_Camera_GetTransportLayerName(m_hCamera, szTL, &iSize);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+	m_strInterface = (char*)szTL;
+
+	// Check 3CCD
+	GetDeviceModelName(strModel);
+	strModel.MakeUpper();
+	if (strModel.Find(_T("AT")) != -1) m_is3CCD = true;
+
+	int value=0;
+	bool ret=false;
+	ret = GetWidth(value);
+	if(ret != true) return false;
+	m_nWidth = value;
+
+	ret = GetHeight(value);
+	if(ret != true) return false;
+	m_nHeight = value;
+
+	ret = GetBpp(value);
+	if(ret != true) return false;
+	m_nBpp = value;
+
+	CString format=_T("");
+	GetPixelFormat(format);
+	format.MakeUpper();
+	if (format.Find(_T("BAYER")) != -1)
+	{
+		m_nBpp *= 3;
+		m_isColorConvert = true;
+	}
+
+	m_pbyBuffer = new BYTE[m_nWidth * m_nHeight * m_nBpp / 8];
+	memset(m_pbyBuffer, 0, m_nWidth * m_nHeight * m_nBpp / 8);
+
+	OnCreateBmpInfo(m_nWidth, m_nHeight, m_nBpp);
+
+	m_isConnected = true;
+	return true;
+}
+
+bool CJaiCamera::OnConnectIP(CString strIPAddress)
+{
+	J_STATUS_TYPE status = J_ST_SUCCESS;
+	uint32_t iSize=0;
+	int8_t szCameraId[J_CAMERA_ID_SIZE] = {0,};
+
+	int nDevices=0, nDvIdx=-1;
+	GetNumberOfDevices(nDevices);
+
+	for (int i=0; i<nDevices; i++)
+	{
+		CString strIP=_T("");
+		GetDeviceIPAddress(i,strIP);
+		if (strIPAddress == strIP)
+		{
+			nDvIdx = i;
+			break;
+		}
+	}
+
+	iSize = sizeof(szCameraId);
+	status = J_Factory_GetCameraIDByIndex(g_hFactory, nDvIdx, szCameraId, &iSize);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+
+	status = J_Camera_Open(g_hFactory, szCameraId, &m_hCamera);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+
+	CString strModel=_T("");
+	int8_t szTL[J_CAMERA_INFO_SIZE] = {0,};
+	iSize = sizeof(szTL);
+	status = J_Camera_GetTransportLayerName(m_hCamera, szTL, &iSize);
+	if(status != J_ST_SUCCESS)
+	{
+		m_strErrMsg = GetErrorMsg(status);
+		return false;
+	}
+	m_strInterface = (char*)szTL;
+
+	// Check 3CCD
+	GetDeviceModelName(strModel);
+	strModel.MakeUpper();
+	if (strModel.Find(_T("AT")) != -1) m_is3CCD = true;
 
 	int value=0;
 	bool ret=false;
@@ -504,14 +639,26 @@ void CJaiCamera::StreamCBFunc(J_tIMAGE_INFO * pAqImageInfo)
 	SetEvent(m_hGrabDone);
 }
 
-bool CJaiCamera::SetSingleFrameMode()
+bool CJaiCamera::SetAcquisitionMode(ACQMODE Mode)
 {
-	return SetValueString(NODE_ACQMODE, _T("SingleFrame"));
-}
+	bool ret=false;
 
-bool CJaiCamera::SetMultiFrameMode()
-{
-	return SetValueString(NODE_ACQMODE, _T("MultiFrame"));
+	switch (Mode)
+	{
+	case ACQ_CNT :
+		ret = SetValueString(NODE_ACQMODE, _T("Continuous"));
+		break;				 
+	case ACQ_SINGLE :		 
+		ret = SetValueString(NODE_ACQMODE, _T("SingleFrame"));
+		break;				 
+	case ACQ_MULTI :		 
+		ret = SetValueString(NODE_ACQMODE, _T("MultiFrame"));
+		break;
+	}
+
+	if (ret == false) return false;
+
+	return true;
 }
 
 bool CJaiCamera::SetMultiFrameCount(int nValue)

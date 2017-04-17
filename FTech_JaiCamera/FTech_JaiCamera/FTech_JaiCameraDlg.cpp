@@ -100,11 +100,10 @@ BOOL CFTech_JaiCameraDlg::OnInitDialog()
 	pList->SetExtendedStyle(LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT);
 	pList->DeleteAllItems();
 	pList->InsertColumn(0, _T(""), LVCFMT_LEFT, 0, -1);
-	pList->InsertColumn(1, _T("Maker"), LVCFMT_CENTER, 70, -1);
-	pList->InsertColumn(2, _T("Model"), LVCFMT_CENTER, 90, -1);
+	pList->InsertColumn(1, _T("Model"), LVCFMT_CENTER, 70, -1);
+	pList->InsertColumn(2, _T("Interface"), LVCFMT_CENTER, 90, -1);
 	pList->InsertColumn(3, _T("SN"), LVCFMT_CENTER, 60, -1); 
-	pList->InsertColumn(4, _T("Type"), LVCFMT_CENTER, 40, -1); 
-	pList->InsertColumn(5, _T("IP"), LVCFMT_CENTER, 90, -1); 
+	pList->InsertColumn(4, _T("ETC"), LVCFMT_CENTER, 40, -1); 
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -150,35 +149,33 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnRefresh()
 	CListCtrl* pList = (CListCtrl*)GetDlgItem(IDC_LTC_LIST);
 	pList->DeleteAllItems();
 
-	JAI_STANDARD::CJaiSystem system;
 	int devices=0;
 	bool ret=false;
 
 	BeginWaitCursor();
-
-	ret = system.SearchDevices(devices);
+	
+	ret = JAI_STANDARD::CJaiCamera::GetNumberOfDevices(devices);
 	if (ret == true)
 	{
 		for (int i=0; i<devices; i++)
 		{
-			CString list=_T(""), vendor=_T(""), model=_T(""), sn=_T(""), ip=_T(""), lf=_T(""), type=_T("");
-			system.GetManufacture(i, vendor);
-			system.GetSerialNumber(i, sn);
-			system.GetModelName(i, model);
-			if (model.Find(_T("GE")) != -1)
+			CString list=_T(""), model=_T(""), sn=_T(""), lf=_T(""), type=_T("");
+			JAI_STANDARD::CJaiCamera::GetDeviceName(i,model);
+			JAI_STANDARD::CJaiCamera::GetInterfaceType(i, lf);
+			JAI_STANDARD::CJaiCamera::GetDeviceSerialNumber(i,sn);
+			if (lf == _T("GevTL"))
 			{
-				system.GetIPAddress(i, ip);
-				system.GetInterface(i, lf);
+				CString tmp=_T("");
+				JAI_STANDARD::CJaiCamera::GetInterfaceName(i, tmp);
 				
-				(lf.Find(_T("FD")) != -1) ? type=_T("FD") : type=_T("SD");
+				(tmp.Find(_T("FD")) != -1) ? type=_T("FD") : type=_T("SD");
 			}
 
 			pList->InsertItem(i, _T(""));
-			pList->SetItem(i, 1, LVIF_TEXT, vendor, 0, 0, 0, NULL ); 
-			pList->SetItem(i, 2, LVIF_TEXT, model, 0, 0, 0, NULL ); 
+			pList->SetItem(i, 1, LVIF_TEXT, model, 0, 0, 0, NULL ); 
+			pList->SetItem(i, 2, LVIF_TEXT, lf, 0, 0, 0, NULL ); 
 			pList->SetItem(i, 3, LVIF_TEXT, sn, 0, 0, 0, NULL ); 
 			pList->SetItem(i, 4, LVIF_TEXT, type, 0, 0, 0, NULL ); 
-			pList->SetItem(i, 5, LVIF_TEXT, ip, 0, 0, 0, NULL ); 
 		}
 	}
 
@@ -299,7 +296,8 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnConnection1()
 
 	if (caption == _T("Connect"))
 	{
-		ret = m_Camera[0].OnConnect(nItem);	
+		//ret = m_Camera[0].OnConnect(nItem);	
+		ret = m_Camera[0].OnConnectID(_T("TEST"));
 		if (ret == true)
 		{
 			CString value=_T("");

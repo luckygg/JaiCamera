@@ -1,13 +1,12 @@
 //----------------------------------------------------------
 // JAI Camera Class
-// JAI SDK 3.0.1.4 JAI SDK 2.1.6.8 version / SDK 1.4.1 version
+// JAI SDK 3.0.1.4
 //----------------------------------------------------------
 // Programmed by William Kim
 //----------------------------------------------------------
-// Last Update : 2017-03-07 15:16
+// Last Update : 2017-04-17 19:10
 // Modified by William Kim
 //----------------------------------------------------------
-
 #pragma once
 
 #include <jai_factory.h>
@@ -41,59 +40,125 @@ enum TRGMODE {TRG_On=0, TRG_Off};
 enum TRGSRC {SRC_Line5, SRC_Line6, SRC_SW, SRC_Output0, SRC_Output1, SRC_Output2, SRC_Output3, SRC_PG0, SRC_PG1, SRC_PG2, SRC_PG3, SRC_NAND1, SRC_NAND2, SRC_ACTION1, SRC_ACTION2, SRC_NOTCONNECTED};
 enum TRGOVL {OVL_Off=0, OVL_ReadOut, OVL_PreFrm};
 enum EXPMODE {EXP_Timed=0, EXP_PWC};
-
-class CJaiSystem
-{
-public :
-	CJaiSystem(void);
-	~CJaiSystem(void);
-
-public :
-	bool SearchDevices(int &nValue);
-	bool GetManufacture(int nIdx, CString &strVendor);
-	bool GetInterface(int nIdx, CString &strInterface);
-	bool GetModelName(int nIdx, CString &strModel);
-	bool GetSerialNumber(int nIdx, CString &strSerial);
-	bool GetIPAddress(int nIdx, CString &strIP);
-	CString GetLastErrorMessage() { return m_strErrMsg; }
-private :
-	FACTORY_HANDLE m_hSysFactory;
-	CString m_strErrMsg;
-	CString GetErrorMsg(J_STATUS_TYPE ErrCode);
-};
+enum ACQMODE {ACQ_CNT=0, ACQ_SINGLE, ACQ_MULTI};
 
 class CJaiCamera
 {
 public:
 	CJaiCamera(void);
 	~CJaiCamera(void);
-
 public :
-	bool OnConnect(int nIdx);
+	//******************************************************************************************************************
+	/// \brief					System의 Device 개수 확인 함수.
+	/// \param [out] nValue		Device 개수 확인.
+	/// \param bool				결과 반환.
+	static bool GetNumberOfDevices(int &nValue);
+	//******************************************************************************************************************
+	/// \brief					특정 Device의 Interface Name 확인 함수.
+	/// \param [in] nDvIdx		Device Index 입력.
+	/// \param [out] strvalue	Interface Name 확인.
+	/// \param bool				결과 반환.
+	static bool GetInterfaceName(int nDvIdx, CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					특정 Device의 Interface Type 확인 함수.
+	/// \param [in] nDvIdx		Device Index 입력.
+	/// \param [out] strvalue	Interface Type 확인.
+	/// \param bool				결과 반환.
+	static bool GetInterfaceType(int nDvIdx, CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					특정 Device의 IP Address 확인 함수.
+	/// \param [in] nDvIdx		Device Index 입력.
+	/// \param [out] strvalue	IP Address 확인.
+	/// \param bool				결과 반환.
+	static bool GetDeviceIPAddress(int nDvIdx, CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					특정 Device의 Model Name 확인 함수.
+	/// \param [in] nDvIdx		Device Index.
+	/// \param [out] strValue	Device Model Name 확인.
+	/// \param bool				결과 반환.
+	static bool GetDeviceName(int nDvIdx, CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					특정 Device의 User Defined Name 확인 함수.
+	/// \param [in] nDvIdx		Device Index.
+	/// \param [out] strValue	Device User Defined Name 확인.
+	/// \param bool				결과 반환.
+	static bool GetDeviceDefinedName(int nDvIdx, CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					특정 Device의 Serial Number 확인 함수.
+	/// \param [in] nDvIdx		Device Index.
+	/// \param [out] strValue	Device Serial Number 확인.
+	/// \param bool				결과 반환.
+	static bool GetDeviceSerialNumber(int nDvIdx, CString &strValue);
+public :
+	//******************************************************************************************************************
+	/// \brief					특정 Device를 연결하는 함수.
+	/// \param [in] nDvIdx		Device Index.
+	/// \param bool				결과 반환.
+	bool OnConnect(int nDvIdx);
+	//******************************************************************************************************************
+	/// \brief					입력한 Device User ID와 동일한 카메라를 연결하는 함수.
+	/// \param [in] strUserID	특정 Device User ID를 입력.
+	/// \param bool				결과 반환.
+	bool OnConnectID(CString strUserID);
+	//******************************************************************************************************************
+	/// \brief					입력한 IP Address와 동일한 카메라를 연결하는 함수.
+	/// \param [in] strIPAddress특정 IP Address를 입력. ('.'를 포함해야 한다.)
+	/// \param bool				결과 반환.
+	bool OnConnectIP(CString strIPAddress);
+	//******************************************************************************************************************
+	/// \brief					카메라를 해제하는 함수.
+	/// \param bool				결과 반환.
 	bool OnDisconnect();
-
-	//----- 영상 취득 제어 -----//
+	//******************************************************************************************************************
+	/// \brief					영상 취득 시작 함수.
+	/// \param bool				결과 반환.
 	bool OnStartAcquisition();
+	//******************************************************************************************************************
+	/// \brief					영상 취득 종료 함수.
+	/// \param bool				결과 반환.
 	bool OnStopAcquisition();
-
-	//----- 영상 취득 방식 선택 -----//
-	bool SetSingleFrameMode();
-	bool SetMultiFrameMode();
-	bool SetMultiFrameCount(int nValue);
+	//******************************************************************************************************************
+	/// \brief					Continuous Mode 설정 함수.
+	/// \param bool				결과 반환.
 	bool SetContinuousMode();
+	//******************************************************************************************************************
+	/// \brief					Software Trigger Mode 설정 함수.
+	/// \param bool				결과 반환.
 	bool SetSoftTriggerMode();
+	//******************************************************************************************************************
+	/// \brief					Hardware Trigger Mode 설정 함수.
+	/// \param bool				결과 반환.
 	bool SetHardTriggerMode();
+	//******************************************************************************************************************
+	/// \brief					Software Trigger Event 발생 함수.
+	/// \param bool				결과 반환.
 	bool OnTriggerEvent();
-
-	//----- 영상 저장-----//
-	bool OnSaveImage(CString strPath);	// 이미지 저장.
-
-	//----- 설정 저장 / 불러오기 -----//
-	bool SetUserSetSelector(USER User);
+	//******************************************************************************************************************
+	/// \brief					Acquisition Mode 설정 함수.
+	/// \param [in] Mode		Continuous / Single Frame / Multi Frame 선택 가능.
+	/// \param bool				결과 반환.
+	bool SetAcquisitionMode(ACQMODE Mode);
+	//******************************************************************************************************************
+	/// \brief					Multi Frame Count 설정 함수.
+	/// \param [in] nValue		Count 입력.
+	/// \param bool				결과 반환.
+	bool SetMultiFrameCount(int nValue);
+	//******************************************************************************************************************
+	/// \brief					이미지 저장 함수.
+	/// \param [in] strPath		저장 경로 입력.
+	/// \param bool				결과 반환.
+	bool OnSaveImage(CString strPath);
+	//******************************************************************************************************************
+	/// \brief					User Set 저장 함수.
+	/// \param bool				결과 반환.
 	bool OnUserSetSave();
+	//******************************************************************************************************************
+	/// \brief					User Set 불러오기 함수.
+	/// \param bool				결과 반환.
 	bool OnUserSetLoad();
-
-	//----- 화이트밸런스 -----//
+	//******************************************************************************************************************
+	/// \brief					Auto White Balance 설정 함수.
+	/// \param bool				결과 반환.
 	bool OnCalculateWhiteBalance();
 
 	//----- 확인 및 반환 함수 -----//
@@ -129,6 +194,11 @@ public :
 	bool SetTriggerOverlap(TRGOVL Ovl);						// Trigger Overlap 설정.
 	bool SetExposureMode(EXPMODE Mode);						// Exposure Mode 설정.
 	bool SetExposureTime(int nValue);					// Exposure Time 설정.
+	//******************************************************************************************************************
+	/// \brief					User Selector 설정 함수.
+	/// \param [in] Mode		Default / UserSet1 입력.
+	/// \param bool				결과 반환.
+	bool SetUserSetSelector(USER User);
 
 	HANDLE GetHandleGrabDone() { return m_hGrabDone; }
 	void ResetHandleGrabDone() { ResetEvent(m_hGrabDone); }
