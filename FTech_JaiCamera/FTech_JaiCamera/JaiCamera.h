@@ -4,7 +4,7 @@
 //----------------------------------------------------------
 // Programmed by William Kim
 //----------------------------------------------------------
-// Last Update : 2017-04-17 19:10
+// Last Update : 2017-04-18 14:12
 // Modified by William Kim
 //----------------------------------------------------------
 #pragma once
@@ -160,86 +160,204 @@ public :
 	/// \brief					Auto White Balance 설정 함수.
 	/// \param bool				결과 반환.
 	bool OnCalculateWhiteBalance();
-
-	//----- 확인 및 반환 함수 -----//
-	CString GetLastErrorMessage() { return m_strErrMsg; }
-	int GetWidth() { return m_nWidth; }
-	int GetHeight() { return m_nHeight; }
-	int GetBpp() { return m_nBpp; }
+public :
+	//******************************************************************************************************************
+	/// \brief					Device 연결 상태 확인 함수.
+	/// \param bool				결과 반환.
 	bool IsConnected() { return m_isConnected; }
+	//******************************************************************************************************************
+	/// \brief					영상 취득 상태 확인 함수.
+	/// \param bool				결과 반환.
 	bool IsActive() { return m_isActived; }
-	bool GetDeviceUserID(CString &strValue);				// Device User ID 반환.
-	bool GetDeviceModelName(CString &strValue);				// Device Model Name 반환.
-	bool GetSerialNumber(bool bGigE, CString &strValue);	// Serial Number 반환.
-	bool GetOffsetX(int &nValue);							// Offset X 반환.
-	bool GetOffsetY(int &nValue);							// Offset Y 반환.
-	bool GetAcquisitionMode(CString &strValue);				// Acquisition Mode 반환.
-	bool GetAcquisitionFrameRate(double &dValue);			// Frame Rate 반환.
-	bool GetTriggerMode(CString &strValue);					// Trigger Mode 반환.
-	bool GetTriggerSource(CString &strValue);				// Trigger Source 반환.
-	bool GetExposureMode(CString &strValue);				// Exposure Mode 반환.
-	bool GetExposureTimeRaw(int &nValue);					// Exposure Time 반환.
-	bool GetPixelFormat(CString &strValue);					// Pixel Format 반환.
+	//******************************************************************************************************************
+	/// \brief					Device User ID 확인 함수.
+	/// \param [out] strValue	Device User ID 확인.
+	/// \param bool				결과 반환.
+	bool GetDeviceUserID(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Device Model Name 확인 함수.
+	/// \param [out] strValue	Device Model Name 확인.
+	/// \param bool				결과 반환.
+	bool GetDeviceModelName(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Device Serial Number 확인 함수.
+	/// \param [in] bGigE		GigE Device인지 설정 함수.
+	/// \param [out] strValue	Device Serial Number 확인.
+	/// \param bool				결과 반환.
+	bool GetSerialNumber(bool bGigE, CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Offset X 확인 함수.
+	/// \param [out] nValue		Offset X 확인.
+	/// \param bool				결과 반환.
+	bool GetOffsetX(int &nValue);
+	//******************************************************************************************************************
+	/// \brief					Offset Y 확인 함수.
+	/// \param [out] nValue		Offset Y 확인.
+	/// \param bool				결과 반환.
+	bool GetOffsetY(int &nValue);
+	//******************************************************************************************************************
+	/// \brief					Acquisition Mode 확인 함수.
+	/// \param [out] strValue	Acquisition Mode 확인.
+	/// \param bool				결과 반환.
+	bool GetAcquisitionMode(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Frame Rate 확인 함수.
+	/// \param [out] dValue		Frame Rate 확인.
+	/// \param bool				결과 반환.
+	bool GetAcquisitionFrameRate(double &dValue);
+	//******************************************************************************************************************
+	/// \brief					Trigger Mode 확인 함수.
+	/// \param [out] strValue	Trigger Mode 확인.
+	/// \param bool				결과 반환.
+	bool GetTriggerMode(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Trigger Source 확인 함수.
+	/// \param [out] strValue	Trigger Source 확인.
+	/// \param bool				결과 반환.
+	bool GetTriggerSource(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Exposure Mode 확인 함수.
+	/// \param [out] strValue	Exposure Mode 확인.
+	/// \param bool				결과 반환.
+	bool GetExposureMode(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					Exposure Time 확인 함수.
+	/// \param [out] nValue		Exposure Time 확인.
+	/// \param bool				결과 반환.
+	bool GetExposureTimeRaw(int &nValue);
+	//******************************************************************************************************************
+	/// \brief					Pixel Format 확인 함수.
+	/// \param [out] strValue	Pixel Format 확인.
+	/// \param bool				결과 반환.
+	bool GetPixelFormat(CString &strValue);
+	//******************************************************************************************************************
+	/// \brief					마지막 에러 메시지 확인 함수.
+	/// \param CString			마지막 에러 메시지 반환.
+	CString GetLastErrorMessage() { return m_strErrMsg; }
+	//******************************************************************************************************************
+	/// \brief					Width 확인 함수.
+	/// \param int				결과 반환.
+	int  GetWidth()  { return m_nWidth;  }
+	//******************************************************************************************************************
+	/// \brief					Height 확인 함수.
+	/// \param int				결과 반환.
+	int  GetHeight() { return m_nHeight; }
+	//******************************************************************************************************************
+	/// \brief					BPP 확인 함수.
+	/// \param int				결과 반환.
+	int  GetBpp()	 { return m_nBpp; }
+	//******************************************************************************************************************
+	/// \brief					Grab Done Handle 반환 함수.
+	/// \param HANDLE			결과 반환.
+	HANDLE GetHandleGrabDone() { return m_hGrabDone; }
+	//******************************************************************************************************************
+	/// \brief					Grab Done Handle Reset 함수.
+	/// \param void				반환 없음.
+	void ResetHandleGrabDone() { ResetEvent(m_hGrabDone); }
+	//******************************************************************************************************************
+	/// \brief					Device의 Interface Type 확인 함수.
+	/// \param CString			Interface Type 문자열 반환.
 	CString GetInterface() { return m_strInterface; }
-	BYTE* GetImageBuffer() { return m_pbyBuffer; }			// Buffer 반환.
-
-	//----- 설정 함수 -----//
-	bool SetDeviceUserID(CString strValue);					// Device User ID 설정.
-	bool SetOffsetX(int nValue);							// Offset X 설정.
-	bool SetOffsetY(int nValue);							// Offset Y 설정.
-	bool SetAcquisitionFrameRate(double dValue);			// Frame Rate 설정.
-	bool SetAcquisitionMode(CString strValue);				// Acquistiion Mode 설정.
-	bool SetTriggerMode(TRGMODE Mode);						// Trigger Mode 설정.
-	bool SetTriggerSource(TRGSRC Src);						// Trigger Source 설정.
-	bool SetTriggerOverlap(TRGOVL Ovl);						// Trigger Overlap 설정.
-	bool SetExposureMode(EXPMODE Mode);						// Exposure Mode 설정.
-	bool SetExposureTime(int nValue);					// Exposure Time 설정.
+	//******************************************************************************************************************
+	/// \brief					Image Buffer 확인 함수.
+	/// \param BYTE*			Image Buffer Pointer 반환.
+	BYTE* GetImageBuffer() { return m_pbyBuffer; }
+	//******************************************************************************************************************
+	/// \brief					Device User ID 설정 함수.
+	/// \param [in] strValue	Device User ID 입력.
+	/// \param bool				결과 반환.
+	bool SetDeviceUserID(CString strValue);
+	//******************************************************************************************************************
+	/// \brief					Offset X 설정 함수.
+	/// \param [in] nValue		Offset X 입력.
+	/// \param bool				결과 반환.
+	bool SetOffsetX(int nValue);
+	//******************************************************************************************************************
+	/// \brief					Offset Y 설정 함수.
+	/// \param [in] nValue		Offset Y 입력.
+	/// \param bool				결과 반환.
+	bool SetOffsetY(int nValue);
+	//******************************************************************************************************************
+	/// \brief					Frame Rate 설정 함수.
+	/// \param [in] dValue		Frame Rate 입력.
+	/// \param bool				결과 반환.
+	bool SetAcquisitionFrameRate(double dValue);
+	//******************************************************************************************************************
+	/// \brief					Acquisition Mode 설정 함수.
+	/// \param [in] strValue	Acquisition Mode 입력.
+	/// \param bool				결과 반환.
+	bool SetAcquisitionMode(CString strValue);
+	//******************************************************************************************************************
+	/// \brief					Trigger Mode 설정 함수.
+	/// \param [in] Mode		On / Off 입력.
+	/// \param bool				결과 반환.
+	bool SetTriggerMode(TRGMODE Mode);
+	//******************************************************************************************************************
+	/// \brief					Trigger Source 설정 함수.
+	/// \param [in] Src			Soft / Hard 입력.
+	/// \param bool				결과 반환.
+	bool SetTriggerSource(TRGSRC Src);
+	//******************************************************************************************************************
+	/// \brief					Trigger Overlap 설정 함수.
+	/// \param [in] Ovl			Off=0 / ReadOut / Pre Frame 입력.
+	/// \param bool				결과 반환.
+	bool SetTriggerOverlap(TRGOVL Ovl);
+	//******************************************************************************************************************
+	/// \brief					Exposure Mode 설정 함수.
+	/// \param [in] Mode		Timed / Trigger Width 입력.
+	/// \param bool				결과 반환.
+	bool SetExposureMode(EXPMODE Mode);
+	//******************************************************************************************************************
+	/// \brief					Exposure Time 설정 함수.
+	/// \param [in] nValue		Exposure Time 입력.
+	/// \param bool				결과 반환.
+	bool SetExposureTime(int nValue);
 	//******************************************************************************************************************
 	/// \brief					User Selector 설정 함수.
 	/// \param [in] Mode		Default / UserSet1 입력.
 	/// \param bool				결과 반환.
 	bool SetUserSetSelector(USER User);
-
-	HANDLE GetHandleGrabDone() { return m_hGrabDone; }
-	void ResetHandleGrabDone() { ResetEvent(m_hGrabDone); }
 private :
 	//FACTORY_HANDLE	m_hFactory;
-	CAM_HANDLE      m_hCamera;
-	THRD_HANDLE     m_hThread;
-	
-	J_tIMAGE_INFO   m_ImgColor;
-	HANDLE			m_hGrabDone;
-	BYTE*			m_pbyBuffer;
-	BITMAPINFO*		m_pBitmapInfo;
+	CAM_HANDLE      m_hCamera;		// Camera Handle.
+	THRD_HANDLE     m_hThread;		// Thread Handle.
+	J_tIMAGE_INFO   m_ImgColor;		// Bayer 변환 시 사용되는 Info.
+	HANDLE			m_hGrabDone;	// Grab Done 확인 Handle.
+	BYTE*			m_pbyBuffer;	// Image Buffer.
+	BITMAPINFO*		m_pBitmapInfo;	// Image Bitmap Info.
 
-	CString m_strInterface;
-	CString m_strErrMsg;
+	CString m_strInterface;	// Device의 Interface 확인 문자열.
+	CString m_strErrMsg;	// 마지막 에러 메시지.
 
-	int	m_nWidth;
-	int	m_nHeight;
-	int	m_nBpp;
-	int	m_nGainR;
-	int	m_nGainG;
-	int	m_nGainB;
+	int	m_nWidth;	// Image Width Size.
+	int	m_nHeight;	// Image Height Size.
+	int	m_nBpp;		// Image Bit Per Pixel 크기.
+	int	m_nGainR;	// White Balance R Gain.
+	int	m_nGainG;	// White Balance G Gain.
+	int	m_nGainB;	// White Balance B Gain.
 
-	bool m_isConnected;
-	bool m_isActived;
-	bool m_isColorConvert;
-	bool m_is3CCD;
+	bool m_isConnected;		// Device 연결 상태 확인.
+	bool m_isActived;		// Acquisition 상태 확인.
+	bool m_isColorConvert;	// Bayer Conversion 확인.
+	bool m_is3CCD;			// 3CCd 확인.
 
-	
+private :
 	CString GetErrorMsg(J_STATUS_TYPE ErrCode);
-
 	bool OpenFactory();
 	bool CloseFactory();
-	void StreamCBFunc(J_tIMAGE_INFO * pAqImageInfo);
-
 	bool GetWidth(int &nValue);
 	bool GetHeight(int &nValue);
 	bool GetBpp(int &nValue);
-
+	void StreamCBFunc(J_tIMAGE_INFO * pAqImageInfo);
 	void OnCreateBmpInfo(int nWidth, int nHeight, int nBpp);
 
+private :
+	//******************************************************************************************************************
+	/// \brief					Type별로 Get/Set 하는 함수.
+	/// \param [in] pNodeName	파라미터의 Node Name 입력.
+	/// \param [in]  Value		파라미터의 값 입력.
+	/// \param [out] Value		파라미터의 값 확인.
+	/// \param bool				결과 반환.
 	bool GetValueString(int8_t* pNodeName, CString &strValue);
 	bool SetValueString(int8_t* pNodeName, CString strValue);
 	bool GetValueInt(int8_t* pNodeName, int &nValue);
@@ -248,27 +366,5 @@ private :
 	bool SetValueDouble(int8_t* pNodeName, double dValue);
 	bool OnExecuteCommand(int8_t* pNodeName);
 };
-
-#ifdef _UNICODE
-static bool CStringToChar(const CString strIn, char* pchOut)
-{
-	if (pchOut == NULL) return false;
-
-	size_t szCvt = 0;
-	wcstombs_s(&szCvt, pchOut, strIn.GetLength()+1, strIn, _TRUNCATE);
-
-	return true;
-}
-#else
-static bool CStringToChar(CString strIn, char* pchOut)
-{
-	if (pchOut == NULL) return false;
-
-	strcpy(pchOut, CT2A(strIn));
-
-	return true;
-}
-
-#endif
 
 }

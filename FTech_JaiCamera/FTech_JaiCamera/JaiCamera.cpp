@@ -1110,10 +1110,20 @@ bool CJaiCamera::SetValueString(int8_t* pNodeName, CString strValue)
 
 	J_STATUS_TYPE status = J_ST_SUCCESS;
 
-	char path[MAX_PATH] = {0,};
-	CStringToChar(strValue,path);
+	//////////////////////////////////////////////////////////////////////////
+	//CString to char*
+	wchar_t* wchar_str;     
+	char*    szValue;      
+	int      char_str_len;  
+	wchar_str = strValue.GetBuffer(strValue.GetLength());
 
-	status = J_Camera_SetValueString(m_hCamera, pNodeName, (int8_t*)path);
+	char_str_len = WideCharToMultiByte(CP_ACP, 0, wchar_str, -1, NULL, 0, NULL, NULL);
+	szValue = new char[char_str_len];
+	WideCharToMultiByte(CP_ACP, 0, wchar_str, -1, szValue, char_str_len, 0,0);  
+	//////////////////////////////////////////////////////////////////////////
+
+	status = J_Camera_SetValueString(m_hCamera, pNodeName, (int8_t*)szValue);
+	delete szValue;
 	if(status != J_ST_SUCCESS)
 	{
 		m_strErrMsg = GetErrorMsg(status);

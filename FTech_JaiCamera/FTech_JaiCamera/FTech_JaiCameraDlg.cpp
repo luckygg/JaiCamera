@@ -300,6 +300,7 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnConnection1()
 		ret = m_Camera[0].OnConnectID(_T("TEST"));
 		if (ret == true)
 		{
+			m_Camera[0].SetAcquisitionMode(JAI_STANDARD::ACQMODE::ACQ_CNT);
 			CString value=_T("");
 			m_Camera[0].GetDeviceModelName(value);
 			SetDlgItemText(IDC_LB_MODEL1, value);
