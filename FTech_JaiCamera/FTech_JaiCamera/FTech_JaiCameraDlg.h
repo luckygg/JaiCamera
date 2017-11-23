@@ -21,7 +21,7 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 public :
-	JAI_STANDARD::CJaiCamera m_Camera[MAX_CAMERA];
+	JAI_SDK::CJaiCamera m_Camera[MAX_CAMERA];
 	void OnDisplayCam1();
 	void OnDisplayCam2();
 	bool m_bThDspWork[MAX_CAMERA];

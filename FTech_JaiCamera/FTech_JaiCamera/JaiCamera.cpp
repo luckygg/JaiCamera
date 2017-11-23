@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "JaiCamera.h"
 
-using namespace JAI_STANDARD;
+using namespace JAI_SDK;
 
 FACTORY_HANDLE	g_hFactory;
 
@@ -33,7 +33,7 @@ FACTORY_HANDLE	g_hFactory;
 
 //////////////////////////////////////////////////////////////////////////
 
-bool CJaiCamera::GetNumberOfDevices(int &nValue)
+bool CJaiCamera::GetDeviceCount(int &nDvCnt)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -48,7 +48,7 @@ bool CJaiCamera::GetNumberOfDevices(int &nValue)
 	status = J_Factory_GetNumOfCameras(g_hFactory, &iNumDev);
 	if(status != J_ST_SUCCESS) return false;
 
-	nValue = (int)iNumDev;
+	nDvCnt = (int)iNumDev;
 
 	return true;
 }
@@ -96,7 +96,7 @@ bool CJaiCamera::GetInterfaceType(int nDvIdx, CString &strValue)
 	return true;
 }
 
-bool CJaiCamera::GetDeviceIPAddress(int nDvIdx, CString &strValue)
+bool CJaiCamera::GetDeviceIPAddr(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -136,7 +136,7 @@ bool CJaiCamera::GetDeviceName(int nDvIdx, CString &strValue)
 	return true;
 }
 
-bool CJaiCamera::GetDeviceDefinedName(int nDvIdx, CString &strValue)
+bool CJaiCamera::GetDeviceUserID(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -156,7 +156,7 @@ bool CJaiCamera::GetDeviceDefinedName(int nDvIdx, CString &strValue)
 	return true;
 }
 
-bool CJaiCamera::GetDeviceSerialNumber(int nDvIdx, CString &strValue)
+bool CJaiCamera::GetDeviceSN(int nDvIdx, CString &strValue)
 {
 	if (g_hFactory == NULL) return false;
 
@@ -349,12 +349,12 @@ bool CJaiCamera::OnConnectID(CString strUserID)
 	int8_t szCameraId[J_CAMERA_ID_SIZE] = {0,};
 
 	int nDevices=0, nDvIdx=-1;
-	GetNumberOfDevices(nDevices);
+	GetDeviceCount(nDevices);
 
 	for (int i=0; i<nDevices; i++)
 	{
 		CString strID=_T("");
-		GetDeviceDefinedName(i, strID);
+		GetDeviceUserID(i, strID);
 		if (strUserID == strID)
 		{
 			nDvIdx = i;
@@ -432,12 +432,12 @@ bool CJaiCamera::OnConnectIP(CString strIPAddress)
 	int8_t szCameraId[J_CAMERA_ID_SIZE] = {0,};
 
 	int nDevices=0, nDvIdx=-1;
-	GetNumberOfDevices(nDevices);
+	GetDeviceCount(nDevices);
 
 	for (int i=0; i<nDevices; i++)
 	{
 		CString strIP=_T("");
-		GetDeviceIPAddress(i,strIP);
+		GetDeviceIPAddr(i,strIP);
 		if (strIPAddress == strIP)
 		{
 			nDvIdx = i;
@@ -639,19 +639,19 @@ void CJaiCamera::StreamCBFunc(J_tIMAGE_INFO * pAqImageInfo)
 	SetEvent(m_hGrabDone);
 }
 
-bool CJaiCamera::SetAcquisitionMode(ACQMODE Mode)
+bool CJaiCamera::SetAcquisitionMode(EAcqMode eMode)
 {
 	bool ret=false;
 
-	switch (Mode)
+	switch (eMode)
 	{
-	case ACQ_CNT :
+	case eContinuous :
 		ret = SetValueString(NODE_ACQMODE, _T("Continuous"));
 		break;				 
-	case ACQ_SINGLE :		 
+	case eSingleFrame :		 
 		ret = SetValueString(NODE_ACQMODE, _T("SingleFrame"));
 		break;				 
-	case ACQ_MULTI :		 
+	case eMultiFrame :		 
 		ret = SetValueString(NODE_ACQMODE, _T("MultiFrame"));
 		break;
 	}
@@ -1024,56 +1024,81 @@ bool CJaiCamera::SetAcquisitionMode(CString strValue)
 	return SetValueString(NODE_ACQMODE, strValue);
 }
 
-bool CJaiCamera::SetTriggerMode(TRGMODE Mode)
+bool CJaiCamera::SetTriggerMode(bool bEnable)
 {
-	char value[MAX_PATH] = {0,};
-	switch(Mode)
-	{
-	case TRG_Off : sprintf_s(value,"%s","Off"); break;
-	case TRG_On  : sprintf_s(value,"%s","On"); break;
-	}
-	return SetValueString(NODE_TRGMODE, CString(value));
+	CString strValue=_T("");
+	if (bEnable == true)
+		strValue = _T("On");
+	else
+		strValue = _T("Off");
+	
+	return SetValueString(NODE_TRGMODE, strValue);
 }
 
-bool CJaiCamera::SetTriggerSource(TRGSRC Src)
+bool CJaiCamera::SetTriggerSource(ETrgSrc eSrc)
 {
-	char value[MAX_PATH] = {0,};
-	switch(Src)
+	CString strValue=_T("");
+	switch(eSrc)
 	{
-	case SRC_Line5			: sprintf_s(value,"%s","Line5"			); break;
-	case SRC_Line6			: sprintf_s(value,"%s","Line6"			); break;
-	case SRC_SW				: sprintf_s(value,"%s","Software"		); break;
-	case SRC_Output0		: sprintf_s(value,"%s","UserOutput0"	); break;
-	case SRC_Output1		: sprintf_s(value,"%s","UserOutput1"	); break;
-	case SRC_Output2		: sprintf_s(value,"%s","UserOutput2"	); break;
-	case SRC_Output3		: sprintf_s(value,"%s","UserOutput3"	); break;
-	case SRC_PG0			: sprintf_s(value,"%s","PulseGenerator0"); break;
-	case SRC_PG1			: sprintf_s(value,"%s","PulseGenerator1"); break;
-	case SRC_PG2			: sprintf_s(value,"%s","PulseGenerator2"); break;
-	case SRC_PG3			: sprintf_s(value,"%s","PulseGenerator3"); break;
-	case SRC_NAND1			: sprintf_s(value,"%s","NAND1Output"	); break;
-	case SRC_NAND2			: sprintf_s(value,"%s","NAND2Output"	); break;
-	case SRC_ACTION1		: sprintf_s(value,"%s","Action1"		); break;
-	case SRC_ACTION2		: sprintf_s(value,"%s","Action2"		); break;
-	case SRC_NOTCONNECTED	: sprintf_s(value,"%s","NotConnected"	); break;
+		case eLine5			: strValue = _T("Line5"			); break;
+		case eLine6			: strValue = _T("Line6"			); break;
+		case eSoftware		: strValue = _T("Software"		); break;
+		case eOutput0		: strValue = _T("UserOutput0"	); break;
+		case eOutput1		: strValue = _T("UserOutput1"	); break;
+		case eOutput2		: strValue = _T("UserOutput2"	); break;
+		case eOutput3		: strValue = _T("UserOutput3"	); break;
+		case ePG0			: strValue = _T("PulseGenerator0"); break;
+		case ePG1			: strValue = _T("PulseGenerator1"); break;
+		case ePG2			: strValue = _T("PulseGenerator2"); break;
+		case ePG3			: strValue = _T("PulseGenerator3"); break;
+		case eNAND1			: strValue = _T("NAND1Output"	); break;
+		case eNAND2			: strValue = _T("NAND2Output"	); break;
+		case eAction1		: strValue = _T("Action1"		); break;
+		case eAction2		: strValue = _T("Action2"		); break;
+		case eNotConnected	: strValue = _T("NotConnected"	); break;
 	}
-	return SetValueString(NODE_TRGSRC, CString(value));
+	return SetValueString(NODE_TRGSRC, strValue);
 }
 
-bool CJaiCamera::SetExposureMode(EXPMODE Mode)
+bool CJaiCamera::SetExposureMode(EExpMode eMode)
 {
-	char value[MAX_PATH] = {0,};
-	switch(Mode)
+	CString strValue=_T("");
+	switch(eMode)
 	{
-	case EXP_Timed	: sprintf_s(value,"%s","Timed"); break;
-	case EXP_PWC	: sprintf_s(value,"%s","TriggerWidth"); break;
+		case eTimed			: strValue = _T("Timed"); break;
+		case eTriggerWidth	: strValue = _T("TriggerWidth"); break;
 	}
-	return SetValueString(NODE_EXPMODE, CString(value));
+
+	return SetValueString(NODE_EXPMODE, strValue);
 }
 
 bool CJaiCamera::SetExposureTime(int nValue)
 {
 	return SetValueInt(NODE_EXPTIME, nValue);
+}
+
+bool CJaiCamera::SetUserSetSelector(EUserSet eUser)
+{
+	CString strValue=_T("");
+	switch(eUser)
+	{
+		case eDefault	: strValue = _T("Default" ); break;
+		case eUserSet1	: strValue = _T("UserSet1"); break;
+		case eUserSet2	: strValue = _T("UserSet2"); break;
+		case eUserSet3	: strValue = _T("UserSet3"); break;
+	}
+
+	return SetValueString(NODE_USERSETSELECTOR, strValue);
+}
+
+bool CJaiCamera::OnUserSetSave()
+{
+	return OnExecuteCommand(NODE_USERSETSAVE);
+}
+
+bool CJaiCamera::OnUserSetLoad()
+{
+	return OnExecuteCommand(NODE_USERSETLOAD);
 }
 
 bool CJaiCamera::GetValueString(int8_t* pNodeName, CString &strValue)

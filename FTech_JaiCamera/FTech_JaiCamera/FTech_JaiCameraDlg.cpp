@@ -154,23 +154,24 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnRefresh()
 
 	BeginWaitCursor();
 	
-	ret = JAI_STANDARD::CJaiCamera::GetNumberOfDevices(devices);
+	ret = JAI_SDK::CJaiCamera::GetDeviceCount(devices);
 	if (ret == true)
 	{
 		for (int i=0; i<devices; i++)
 		{
 			CString list=_T(""), model=_T(""), sn=_T(""), lf=_T(""), type=_T("");
-			JAI_STANDARD::CJaiCamera::GetDeviceName(i,model);
-			JAI_STANDARD::CJaiCamera::GetInterfaceType(i, lf);
-			JAI_STANDARD::CJaiCamera::GetDeviceSerialNumber(i,sn);
+			JAI_SDK::CJaiCamera::GetDeviceName(i,model);
+			JAI_SDK::CJaiCamera::GetInterfaceType(i, lf);
+			JAI_SDK::CJaiCamera::GetDeviceSN(i,sn);
 			if (lf == _T("GevTL"))
 			{
 				CString tmp=_T("");
-				JAI_STANDARD::CJaiCamera::GetInterfaceName(i, tmp);
+				JAI_SDK::CJaiCamera::GetInterfaceName(i, tmp);
 				
 				(tmp.Find(_T("FD")) != -1) ? type=_T("FD") : type=_T("SD");
 			}
-
+			else
+				type = lf;
 			pList->InsertItem(i, _T(""));
 			pList->SetItem(i, 1, LVIF_TEXT, model, 0, 0, 0, NULL ); 
 			pList->SetItem(i, 2, LVIF_TEXT, lf, 0, 0, 0, NULL ); 
@@ -296,11 +297,10 @@ void CFTech_JaiCameraDlg::OnBnClickedBtnConnection1()
 
 	if (caption == _T("Connect"))
 	{
-		//ret = m_Camera[0].OnConnect(nItem);	
-		ret = m_Camera[0].OnConnectID(_T("TEST"));
+		ret = m_Camera[0].OnConnect(nItem);	
 		if (ret == true)
 		{
-			m_Camera[0].SetAcquisitionMode(JAI_STANDARD::ACQMODE::ACQ_CNT);
+			m_Camera[0].SetAcquisitionMode(JAI_SDK::eContinuous);
 			CString value=_T("");
 			m_Camera[0].GetDeviceModelName(value);
 			SetDlgItemText(IDC_LB_MODEL1, value);

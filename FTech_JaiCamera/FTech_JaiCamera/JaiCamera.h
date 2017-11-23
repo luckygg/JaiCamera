@@ -4,13 +4,15 @@
 //----------------------------------------------------------
 // Programmed by William Kim
 //----------------------------------------------------------
-// Last Update : 2017-04-18 14:12
+// Last Update : 2017-11-23 13:55
 // Modified by William Kim
 //----------------------------------------------------------
 #pragma once
 
 #include <jai_factory.h>
 #pragma comment (lib,"Jai_Factory")
+
+namespace JAI_SDK {
 
 #define NODE_WIDTH				(int8_t*)"Width"
 #define NODE_HEIGHT				(int8_t*)"Height"
@@ -31,16 +33,16 @@
 #define NODE_ACQSTOP			(int8_t*)"AcquisitionStop"
 #define NODE_ACQMMODE			(int8_t*)"AcquisitionMode"
 #define NODE_ACQMFRMCNT			(int8_t*)"AcquisitionFrameCount"
-
-namespace JAI_STANDARD{
+#define NODE_USERSETSELECTOR	(int8_t*)"UserSetSelector"
+#define NODE_USERSETSAVE		(int8_t*)"UserSetSave"
+#define NODE_USERSETLOAD		(int8_t*)"UserSetLoad"
 
 //----- enum type -----//
-enum USER {USER_Default=0, USER_UserSet1, USER_UserSet2, USER_UserSet3};
-enum TRGMODE {TRG_On=0, TRG_Off};
-enum TRGSRC {SRC_Line5, SRC_Line6, SRC_SW, SRC_Output0, SRC_Output1, SRC_Output2, SRC_Output3, SRC_PG0, SRC_PG1, SRC_PG2, SRC_PG3, SRC_NAND1, SRC_NAND2, SRC_ACTION1, SRC_ACTION2, SRC_NOTCONNECTED};
-enum TRGOVL {OVL_Off=0, OVL_ReadOut, OVL_PreFrm};
-enum EXPMODE {EXP_Timed=0, EXP_PWC};
-enum ACQMODE {ACQ_CNT=0, ACQ_SINGLE, ACQ_MULTI};
+typedef	enum { eDefault=0, eUserSet1, eUserSet2, eUserSet3 } EUserSet;
+typedef	enum { eLine5=0, eLine6, eSoftware, eOutput0, eOutput1, eOutput2, eOutput3, ePG0, ePG1, ePG2, ePG3, eNAND1, eNAND2, eAction1, eAction2, eNotConnected } ETrgSrc;
+typedef	enum { eOff=0, eReadOut, ePreviousFrame } ETrgOvl;
+typedef	enum { eTimed=0, eTriggerWidth } EExpMode;
+typedef	enum { eContinuous=0, eSingleFrame, eMultiFrame } EAcqMode ;
 
 class CJaiCamera
 {
@@ -50,9 +52,9 @@ public:
 public :
 	//******************************************************************************************************************
 	/// \brief					System의 Device 개수 확인 함수.
-	/// \param [out] nValue		Device 개수 확인.
+	/// \param [out] nDvCnt		Device 개수 확인.
 	/// \param bool				결과 반환.
-	static bool GetNumberOfDevices(int &nValue);
+	static bool GetDeviceCount(int &nDvCnt);
 	//******************************************************************************************************************
 	/// \brief					특정 Device의 Interface Name 확인 함수.
 	/// \param [in] nDvIdx		Device Index 입력.
@@ -70,7 +72,7 @@ public :
 	/// \param [in] nDvIdx		Device Index 입력.
 	/// \param [out] strvalue	IP Address 확인.
 	/// \param bool				결과 반환.
-	static bool GetDeviceIPAddress(int nDvIdx, CString &strValue);
+	static bool GetDeviceIPAddr(int nDvIdx, CString &strValue);
 	//******************************************************************************************************************
 	/// \brief					특정 Device의 Model Name 확인 함수.
 	/// \param [in] nDvIdx		Device Index.
@@ -82,13 +84,13 @@ public :
 	/// \param [in] nDvIdx		Device Index.
 	/// \param [out] strValue	Device User Defined Name 확인.
 	/// \param bool				결과 반환.
-	static bool GetDeviceDefinedName(int nDvIdx, CString &strValue);
+	static bool GetDeviceUserID(int nDvIdx, CString &strValue);
 	//******************************************************************************************************************
 	/// \brief					특정 Device의 Serial Number 확인 함수.
 	/// \param [in] nDvIdx		Device Index.
 	/// \param [out] strValue	Device Serial Number 확인.
 	/// \param bool				결과 반환.
-	static bool GetDeviceSerialNumber(int nDvIdx, CString &strValue);
+	static bool GetDeviceSN(int nDvIdx, CString &strValue);
 public :
 	//******************************************************************************************************************
 	/// \brief					특정 Device를 연결하는 함수.
@@ -137,7 +139,7 @@ public :
 	/// \brief					Acquisition Mode 설정 함수.
 	/// \param [in] Mode		Continuous / Single Frame / Multi Frame 선택 가능.
 	/// \param bool				결과 반환.
-	bool SetAcquisitionMode(ACQMODE Mode);
+	bool SetAcquisitionMode(EAcqMode eMode);
 	//******************************************************************************************************************
 	/// \brief					Multi Frame Count 설정 함수.
 	/// \param [in] nValue		Count 입력.
@@ -289,24 +291,24 @@ public :
 	bool SetAcquisitionMode(CString strValue);
 	//******************************************************************************************************************
 	/// \brief					Trigger Mode 설정 함수.
-	/// \param [in] Mode		On / Off 입력.
+	/// \param [in] bEnable		On / Off 입력.
 	/// \param bool				결과 반환.
-	bool SetTriggerMode(TRGMODE Mode);
+	bool SetTriggerMode(bool bEnable);
 	//******************************************************************************************************************
 	/// \brief					Trigger Source 설정 함수.
 	/// \param [in] Src			Soft / Hard 입력.
 	/// \param bool				결과 반환.
-	bool SetTriggerSource(TRGSRC Src);
+	bool SetTriggerSource(ETrgSrc eSrc);
 	//******************************************************************************************************************
 	/// \brief					Trigger Overlap 설정 함수.
 	/// \param [in] Ovl			Off=0 / ReadOut / Pre Frame 입력.
 	/// \param bool				결과 반환.
-	bool SetTriggerOverlap(TRGOVL Ovl);
+	bool SetTriggerOverlap(ETrgOvl eOvl);
 	//******************************************************************************************************************
 	/// \brief					Exposure Mode 설정 함수.
 	/// \param [in] Mode		Timed / Trigger Width 입력.
 	/// \param bool				결과 반환.
-	bool SetExposureMode(EXPMODE Mode);
+	bool SetExposureMode(EExpMode eMode);
 	//******************************************************************************************************************
 	/// \brief					Exposure Time 설정 함수.
 	/// \param [in] nValue		Exposure Time 입력.
@@ -316,7 +318,7 @@ public :
 	/// \brief					User Selector 설정 함수.
 	/// \param [in] Mode		Default / UserSet1 입력.
 	/// \param bool				결과 반환.
-	bool SetUserSetSelector(USER User);
+	bool SetUserSetSelector(EUserSet eUser);
 private :
 	//FACTORY_HANDLE	m_hFactory;
 	CAM_HANDLE      m_hCamera;		// Camera Handle.
